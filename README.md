@@ -17,6 +17,14 @@ markdown, runnable code below, ending with a `Things to experiment with:` block.
 The pLM and GNN tracks intersect in `gnn/gnn_l4` (ESM-2 embeddings as GNN node
 features) and again in the capstones (joint end-to-end training).
 
+> **This repo is also the lab bench for a research project.** The reading list,
+> paper notes, and project plan live in the Obsidian research vault at
+> `G:\My Drive\ObsidianDB\vault\obsidian\xAI for DL in Proteins` (the **research
+> docs** — treat them as the source of truth for the science). The active
+> direction is **Idea 4 — cross-method xAI for PPI classification, validated
+> against SKEMPI v2.0 alanine-scanning hotspots**. See
+> [Research track — Idea 4](#research-track--cross-method-xai-for-ppi-idea-4) below.
+
 ## Setup
 
 ```powershell
@@ -79,6 +87,65 @@ Attribution / explainability: "which inputs drove the model's output?"
 |---|---|---|---|
 | [ig_l1_simple](ig/ig_l1_simple.ipynb) | IG from scratch on a tiny known function: the path integral of gradients, the completeness axiom, why IG beats a plain gradient. | <1 sec | No |
 | [ig_l2_tiny_network](ig/ig_l2_tiny_network.ipynb) | IG on a small trained network. | <1 min | No |
+
+## Research track — Cross-method xAI for PPI (Idea 4)
+
+The lessons above are the building blocks; this is what they build toward.
+
+**Research docs (source of truth):** `G:\My Drive\ObsidianDB\vault\obsidian\xAI for DL in Proteins`
+
+| Doc | What it gives you |
+|---|---|
+| `00_SUMMARY_xAI_for_DL_in_Proteins.md` | The student's guide: IG, protein representations, the 7 papers, 6 project ideas, and **Part 7 — why Idea 4 is the pick**. Read this first. |
+| `June 2026 Paper Creation process.md` | The concrete first-three-weeks de-risking plan + task taxonomy. |
+| `03_Sendin_2025_..._PPI_Geometric_DL_Explainability.md` | The pipeline we re-implement: Struct2Graph (GCN + mutual attention) on PINDER; the 0.97→0.78 F1 interface-ablation result (shortcut learning). |
+| `02_Sundararajan_..._Integrated_Gradients_...md` | IG axioms + recipe (the `ig/` lessons implement this). |
+| `04_Fazel_2025_...md` | Nine attribution methods benchmarked on pLMs — no single method wins (the motivation for *consensus*). |
+| `01_Hunklinger_Ferruz_2025_...`, `05_Chakraborty...`, `06_Sun2025...`, `07_Johnston_2023...` | Field map, applied templates, and engineering context. |
+
+### The hypothesis
+
+> Combining **three** xAI methods — mutual attention, Integrated Gradients on the
+> GCN node embeddings, and GNNExplainer on the graph — isolates PPI-causal
+> residues **better than any single method**, as measured by agreement with
+> alanine-scanning ΔΔG hotspots (ΔΔG ≥ 2 kcal/mol) in **SKEMPI v2.0**.
+
+Sharp and falsifiable. Every paper in the folder flags this exact missing
+experiment (Sendin's own future-work list; Hunklinger & Ferruz's call for
+cross-method validation; Fazel's "no single method wins").
+
+### Pipeline → which lessons cover each piece
+
+| Stage | Lesson(s) to study first | New work for the project |
+|---|---|---|
+| Protein → residue graph (C-α nodes, distance-threshold edges) | [gnn_l1](gnn/gnn_l1_graphs_from_proteins.ipynb), [gnn_l6](gnn/gnn_l6_real_structures.ipynb), [gnn_l7](gnn/gnn_l7_edge_features.ipynb) | PINDER loader; 9.5 Å edge threshold; per-interface 4/6/8/10 Å ablation graphs |
+| GCN encoder + mutual attention over a protein **pair** | [gnn_l3](gnn/gnn_l3_graph_classification.ipynb), [gnn_l11](gnn/gnn_l11_interaction_graphs.ipynb) (pair/bipartite), [plm_l6](plm/plm_l6_attention_contacts.ipynb) (attention as signal) | Struct2Graph shared-weight twin-GCN + mutual-attention head; multi-class Cluster-ID output |
+| Optional pLM node features | [gnn_l4](gnn/gnn_l4_plm_plus_gnn.ipynb), [capstone_l1](capstones/capstone_l1_end_to_end_plm_gnn.ipynb) | ESM-2 embeddings as node features (Sendin future-work #2) |
+| **xAI method 1 — attention** | [plm_l6](plm/plm_l6_attention_contacts.ipynb) | Extract + project mutual-attention coefficients |
+| **xAI method 2 — Integrated Gradients** | [ig_l1](ig/ig_l1_simple.ipynb), [ig_l2](ig/ig_l2_tiny_network.ipynb) | IG on the post-GCN node-embedding matrix via Captum's `to_captum_model` (avoids attributing through raw message passing) |
+| **xAI method 3 — GNNExplainer** | GNN track (PyG `GNNExplainer`) | Run PyG's built-in explainer on the trained GCN |
+| Consensus + benchmark | [capstone_l2](capstones/capstone_l2_benchmark_suite.ipynb) (honest eval) | Rank-aggregate the three saliencies; correlate consensus residues vs SKEMPI ΔΔG |
+| 3D visualisation | — | PyMOL renders of high-saliency residues vs measured hotspots |
+
+### Datasets this track needs (beyond the lessons' HF sets)
+
+| Name | What it gives | URL |
+|---|---|---|
+| **PINDER** | 2.3 M PPIs with interface Cluster IDs (the training set) | github.com/pinder-org/pinder |
+| **SKEMPI v2.0** | ~7,000 mutation-induced ΔΔG values across 345 PPI complexes (the ground truth) | life.bsc.es/pid/skempi2 |
+| **PyMOL** | 3D visualisation of saliency vs hotspots | `pip install pymol-open-source` |
+
+`captum` and `torch_geometric` are already in [requirements.txt](requirements.txt).
+
+### De-risking plan (first three weeks, from the research docs)
+
+1. **Week 1** — Clone PINDER, replicate Sendin's 31-cluster training run, confirm ~0.97 F1 reproduces.
+2. **Week 2** — IG on the GCN node embeddings (Captum `to_captum_model`); GNNExplainer via PyG.
+3. **Week 3** — Pull SKEMPI v2.0, intersect with PINDER complexes, first plot of *consensus high-saliency residues vs measured ΔΔG ≥ 2 kcal/mol*.
+
+> Go/no-go: if by week 3 IG produces sensible per-residue attributions on a single
+> complex, the project is on track. If not, fall back to **Idea 1** (BioLiP2 +
+> ESM-2 ligand-binding-site faithfulness benchmark) — same shape, flatter compute curve.
 
 ## Models you can swap in (pLMs)
 
