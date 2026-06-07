@@ -234,11 +234,15 @@ class Struct2Graph(nn.Module):
         num_classes: number of PPI classes (binary or the PINDER cluster count).
     """
 
-    def __init__(self, in_dim=20, hidden=32, num_classes=2):
+    def __init__(self, in_dim=20, hidden=32, num_classes=2, dropout=0.0):
         super().__init__()
         self.conv1 = GCNConv(in_dim, hidden)
         self.conv2 = GCNConv(hidden, hidden)
         self.hidden = hidden
+        # Dropout is applied FUNCTIONALLY (in encode + before the classifier),
+        # not as a module, so adding it leaves the state_dict keys unchanged and
+        # weights saved by a dropout=0 model still load. Active only in train().
+        self.dropout = dropout
         # Mutual-attention projections (query from one chain, key from the other).
         self.w_q = nn.Linear(hidden, hidden, bias=False)
         self.w_k = nn.Linear(hidden, hidden, bias=False)
@@ -251,6 +255,7 @@ class Struct2Graph(nn.Module):
     def encode(self, x, edge_index):
         """One chain's residues -> (L, hidden) node embeddings (post-GCN)."""
         h = F.relu(self.conv1(x, edge_index))
+        h = F.dropout(h, p=self.dropout, training=self.training)
         h = self.conv2(h, edge_index)
         return h
 
@@ -280,7 +285,9 @@ class Struct2Graph(nn.Module):
         else:
             pooled_a = global_mean_pool(ctx_a, batch_a)
             pooled_b = global_mean_pool(ctx_b, batch_b)
-        logits = self.classifier(torch.cat([pooled_a, pooled_b], dim=-1))
+        pooled = F.dropout(torch.cat([pooled_a, pooled_b], dim=-1),
+                           p=self.dropout, training=self.training)
+        logits = self.classifier(pooled)
         self._cache["attn_ab"] = attn_ab
         self._cache["h_a"], self._cache["h_b"] = h_a, h_b
         return logits
@@ -372,20 +379,22 @@ def build_demo_dataset(threshold=8.0, augment=6, edge_drop=0.10, seed=0,
 
 
 def train_struct2graph(samples, hidden=32, epochs=80, lr=5e-3, seed=0,
-                       device=None, verbose=True):
+                       device=None, verbose=True, dropout=0.0, weight_decay=0.0):
     """Train the multi-class Struct2Graph cluster classifier on the demo samples.
 
-    Tiny by design - a few real complexes, a 2-layer GCN. Like Sendin's own
-    model it will essentially overfit at this scale; that is fine and even
-    on-message (the thesis's headline lesson is shortcut learning). The point is
-    a working classifier whose attention, IG, and GNNExplainer signals the next
-    notebooks can interrogate. Returns the trained model (``eval`` mode).
+    Tiny by design - a few real complexes, a 2-layer GCN. With the defaults
+    (``dropout=0``, ``weight_decay=0``) it essentially overfits at this scale;
+    that is fine and even on-message (the thesis's headline lesson is shortcut
+    learning). Pass ``dropout`` / ``weight_decay`` > 0 to regularise it instead -
+    ``ig_l5`` uses this to show that a non-memorising model has a far smaller IG
+    completeness delta (less gradient saturation). Returns the model (``eval``).
     """
     device = device or get_device()
     torch.manual_seed(seed)
     num_classes = len({s["label"] for s in samples})
-    model = Struct2Graph(in_dim=20, hidden=hidden, num_classes=num_classes).to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    model = Struct2Graph(in_dim=20, hidden=hidden, num_classes=num_classes,
+                         dropout=dropout).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     samples = [dict(s) for s in samples]
     for s in samples:                                   # move graphs once
         s["ga"], s["gb"] = s["ga"].to(device), s["gb"].to(device)
