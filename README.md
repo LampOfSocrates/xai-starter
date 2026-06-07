@@ -1,12 +1,21 @@
 # Protein ML — Hands-On Lessons
 
-Two parallel lesson tracks: **pLMs** (Protein Language Models) and **GNNs**
-(Graph Neural Networks). Each lesson is a self-contained Python script.
-Heavy comments throughout. Every script ends with a `Things to experiment
-with:` block to keep you going.
+Lesson tracks: **pLMs** (Protein Language Models), **GNNs** (Graph Neural
+Networks), **IG** (Integrated Gradients — model attribution), and two
+cross-cutting **capstones**. Each track lives in its own folder (`plm/`, `gnn/`,
+`ig/`, `capstones/`) with its own README index.
 
-The two tracks intersect in `gnn_l4`, where ESM-2 embeddings become node
-features for a GNN.
+Every lesson is a self-contained **Jupyter notebook** (`*.ipynb`): explanation in
+markdown, runnable code below, ending with a `Things to experiment with:` block.
+**Run the cells top to bottom** (*Run All*) — they build on each other.
+
+> The original `*.py` scripts each notebook was generated from are archived under
+> [to_be_deleted/](to_be_deleted/). The notebooks are now canonical; the scripts
+> are kept only for reference. Regenerate a notebook from a script with
+> `python _py_to_notebook.py <path/to/script.py>`.
+
+The pLM and GNN tracks intersect in `gnn/gnn_l4` (ESM-2 embeddings as GNN node
+features) and again in the capstones (joint end-to-end training).
 
 ## Setup
 
@@ -19,29 +28,57 @@ pip install -r requirements.txt
 The first lesson you run will download the chosen model (~30 MB for ESM-2 8M)
 and the dataset. Both cache locally — subsequent runs are fast.
 
-## pLM track
+## pLM track — [plm/README.md](plm/README.md)
 
-| File | What it teaches | CPU runtime | GPU? |
+| Notebook | What it teaches | CPU runtime | GPU? |
 |---|---|---|---|
-| [plm_l1_embeddings_probe.py](plm_l1_embeddings_probe.py) | Frozen pLM as a feature extractor + sklearn classifier on top. Cheapest way to use a pLM. | ~2-5 min | No |
-| [plm_l2_zero_shot_variants.py](plm_l2_zero_shot_variants.py) | Score mutations using the masked-LM head. NO training required. | ~1 min | No |
-| [plm_l3_finetune_classification.py](plm_l3_finetune_classification.py) | Fine-tune end-to-end for sequence classification with HF Trainer. | ~10-30 min | Helpful |
-| [plm_l4_token_classification.py](plm_l4_token_classification.py) | Per-residue prediction (e.g. secondary structure). Label-to-token alignment. | ~15-30 min | Helpful |
-| [plm_l5_model_comparison.py](plm_l5_model_comparison.py) | Grid of {models} × {pooling strategies}. Outputs CSV. | ~10-20 min | Helpful for big models |
+| [plm_l1_embeddings_probe](plm/plm_l1_embeddings_probe.ipynb) | Frozen pLM as a feature extractor + sklearn classifier on top. Cheapest way to use a pLM. | ~2-5 min | No |
+| [plm_l2_zero_shot_variants](plm/plm_l2_zero_shot_variants.ipynb) | Score mutations using the masked-LM head. NO training required. | ~1 min | No |
+| [plm_l3_finetune_classification](plm/plm_l3_finetune_classification.ipynb) | Fine-tune end-to-end for sequence classification with HF Trainer. | ~10-30 min | Helpful |
+| [plm_l4_token_classification](plm/plm_l4_token_classification.ipynb) | Per-residue prediction (e.g. secondary structure). Label-to-token alignment. | ~15-30 min | Helpful |
+| [plm_l5_model_comparison](plm/plm_l5_model_comparison.ipynb) | Grid of {models} × {pooling strategies}. Outputs CSV. | ~10-20 min | Helpful |
+| [plm_l6_attention_contacts](plm/plm_l6_attention_contacts.ipynb) | ESM attention heads recover residue contacts, unsupervised (Rao 2020). | ~2-5 min | No |
+| [plm_l7_lora_peft](plm/plm_l7_lora_peft.ipynb) | Parameter-efficient fine-tuning with LoRA — train <1% of params. | ~10-20 min | Helpful |
+| [plm_l8_structure_aware](plm/plm_l8_structure_aware.ipynb) | Structure-aware pLMs (ProstT5 / SaProt) and the 3Di structural alphabet. | ~5-10 min | Helpful |
+| [plm_l9_embedding_retrieval](plm/plm_l9_embedding_retrieval.ipynb) | Embedding-space geometry (PCA/t-SNE) + nearest-neighbour homology search. | ~3-5 min | No |
+| [plm_l10_inverse_folding](plm/plm_l10_inverse_folding.ipynb) | Generative design via masked-LM sampling; native-sequence recovery. | ~3-5 min | No |
+| [plm_l11_calibration](plm/plm_l11_calibration.ipynb) | Reliability diagrams, ECE, and temperature scaling. | ~3-5 min | No |
 
-Notebook: [plm_tutorial.ipynb](plm_tutorial.ipynb).
+Consolidated tutorial: [plm_tutorial.ipynb](plm/plm_tutorial.ipynb).
 
-## GNN track
+## GNN track — [gnn/README.md](gnn/README.md)
 
-| File | What it teaches | CPU runtime | GPU? |
+| Notebook | What it teaches | CPU runtime | GPU? |
 |---|---|---|---|
-| [gnn_l1_graphs_from_proteins.py](gnn_l1_graphs_from_proteins.py) | Represent a protein as a PyG Data object: sequence graph vs contact graph. Visualises both. | <1 min | No |
-| [gnn_l2_node_classification.py](gnn_l2_node_classification.py) | A 2-layer GCN for per-residue prediction. Compared head-to-head against an MLP baseline. | ~2 min | No |
-| [gnn_l3_graph_classification.py](gnn_l3_graph_classification.py) | Whole-protein prediction with GAT + global pool, on DeepSol. | ~5-15 min | Helpful |
-| [gnn_l4_plm_plus_gnn.py](gnn_l4_plm_plus_gnn.py) | The bridge: ESM-2 embeddings as node features for the GNN of `gnn_l3`. | ~10-25 min | Helpful |
-| [gnn_l5_equivariant_gnn.py](gnn_l5_equivariant_gnn.py) | Build a minimal EGNN from scratch. Numerically verify rotation/translation equivariance. | <1 min | No |
+| [gnn_l1_graphs_from_proteins](gnn/gnn_l1_graphs_from_proteins.ipynb) | Represent a protein as a PyG Data object: sequence vs contact graph. Visualises both. **+ interactive PDB explorer.** | <1 min | No |
+| [gnn_l2_node_classification](gnn/gnn_l2_node_classification.ipynb) | A 2-layer GCN for per-residue prediction, head-to-head vs an MLP baseline. | ~2 min | No |
+| [gnn_l3_graph_classification](gnn/gnn_l3_graph_classification.ipynb) | Whole-protein prediction with GAT + global pool, on DeepSol. | ~5-15 min | Helpful |
+| [gnn_l4_plm_plus_gnn](gnn/gnn_l4_plm_plus_gnn.ipynb) | The bridge: ESM-2 embeddings as node features for the GNN of `gnn_l3`. | ~10-25 min | Helpful |
+| [gnn_l5_equivariant_gnn](gnn/gnn_l5_equivariant_gnn.ipynb) | Build a minimal EGNN from scratch; numerically verify equivariance. | <1 min | No |
+| [gnn_l6_real_structures](gnn/gnn_l6_real_structures.ipynb) | Real PDB structures + contact maps (no more synthetic helix). | ~1-2 min | No |
+| [gnn_l7_edge_features](gnn/gnn_l7_edge_features.ipynb) | Edge features & geometry (distances, directions) with NNConv. | ~3-5 min | No |
+| [gnn_l8_contact_prediction](gnn/gnn_l8_contact_prediction.ipynb) | Edge-level task: predict residue contacts; Precision@L. | ~3-5 min | No |
+| [gnn_l9_knn_graphs](gnn/gnn_l9_knn_graphs.ipynb) | k-NN / learned graphs over ESM-2 embeddings when no structure is available. | ~10-20 min | Helpful |
+| [gnn_l10_oversmoothing](gnn/gnn_l10_oversmoothing.ipynb) | Oversmoothing vs depth; residual / jumping-knowledge fixes. | ~3-5 min | No |
+| [gnn_l11_interaction_graphs](gnn/gnn_l11_interaction_graphs.ipynb) | Heterogeneous / bipartite graphs; protein–drug link prediction. | ~2-4 min | No |
 
-Notebook: [gnn_tutorial.ipynb](gnn_tutorial.ipynb).
+Consolidated tutorial: [gnn_tutorial.ipynb](gnn/gnn_tutorial.ipynb).
+
+## Capstones — [capstones/README.md](capstones/README.md)
+
+| Notebook | What it teaches | CPU runtime | GPU? |
+|---|---|---|---|
+| [capstone_l1_end_to_end_plm_gnn](capstones/capstone_l1_end_to_end_plm_gnn.ipynb) | Train ESM-2 **and** a GNN jointly (gradients into the pLM) vs the frozen baseline. | ~15-40 min | Recommended |
+| [capstone_l2_benchmark_suite](capstones/capstone_l2_benchmark_suite.ipynb) | Honest evaluation: train/val/test splits, early stopping, multi-seed mean±std. | ~10-25 min | Helpful |
+
+## IG track (Integrated Gradients)
+
+Attribution / explainability: "which inputs drove the model's output?"
+
+| Notebook | What it teaches | CPU runtime | GPU? |
+|---|---|---|---|
+| [ig_l1_simple](ig/ig_l1_simple.ipynb) | IG from scratch on a tiny known function: the path integral of gradients, the completeness axiom, why IG beats a plain gradient. | <1 sec | No |
+| [ig_l2_tiny_network](ig/ig_l2_tiny_network.ipynb) | IG on a small trained network. | <1 min | No |
 
 ## Models you can swap in (pLMs)
 
@@ -107,12 +144,17 @@ Pooling for graph-level tasks: `global_mean_pool`, `global_max_pool`, `global_ad
 ## Quick start
 
 ```powershell
-python plm_l1_embeddings_probe.py    # easiest: pLM + sklearn
-python gnn_l1_graphs_from_proteins.py   # easiest: just builds + visualises a graph
+pip install -r requirements.txt
+jupyter lab          # then open any lesson notebook and Run All
 ```
 
-If a dataset throws a column-name error, open the lesson — every script
+Gentlest starting points (no GPU, minimal downloads):
+- [gnn_l1_graphs_from_proteins](gnn/gnn_l1_graphs_from_proteins.ipynb) — builds + visualises a graph; ends with an interactive PDB explorer.
+- [ig_l1_simple](ig/ig_l1_simple.ipynb) — IG math from scratch, no downloads.
+- [plm_l1_embeddings_probe](plm/plm_l1_embeddings_probe.ipynb) — pLM + sklearn.
+
+If a dataset throws a column-name error, run the early cells — every lesson
 prints the dataset's features and tells you which constants to adjust.
 
-> `plm_demo.py` is the original starter and overlaps with `plm_l3`.
-> Safe to delete once you're comfortable with the lessons.
+> `plm/plm_demo.ipynb` is the original starter and overlaps with `plm_l3`.
+> Safe to skip once you're comfortable with the lessons.
