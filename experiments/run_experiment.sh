@@ -60,12 +60,8 @@ export MLFLOW_TAG_config_hash="$CONFIG_HASH"
 export SSL_CERT_FILE="$("$PY" -c 'import certifi; print(certifi.where())')"
 export HF_HUB_DISABLE_PROGRESS_BARS=1
 
-# --- 4. Build papermill -p args and execute --------------------------------
-PM_ARGS=()
-for kv in "${PARAMS[@]:-}"; do
-  [[ -z "$kv" ]] && continue
-  PM_ARGS+=(-p "${kv%%=*}" "${kv#*=}")
-done
+# --- 4. Write a TYPED param file (papermill -p coerces to string) ----------
+"$PY" experiments/lib/mkparams.py "$OUTDIR/params.yaml" "${PARAMS[@]:-}"
 
 # Persist the resolved manifest next to the executed notebook.
 {
@@ -74,12 +70,11 @@ done
   echo "run_uid: $RUN_UID"
   echo "config_hash: $CONFIG_HASH"
   echo "notebook: $NOTEBOOK"
-  echo "params:"
-  for kv in "${PARAMS[@]:-}"; do [[ -n "$kv" ]] && echo "  - $kv"; done
+  echo "params_file: params.yaml"
 } > "$OUTDIR/manifest.yaml"
 
 "$PY" -m papermill "$NOTEBOOK" "$OUTDIR/output.ipynb" \
-  --kernel "$KERNEL" --log-output "${PM_ARGS[@]}"
+  --kernel "$KERNEL" --log-output -f "$OUTDIR/params.yaml"
 
 echo "[run] done -> $OUTDIR/output.ipynb"
 echo "[run] MLflow: tags.run_uid = '$RUN_UID'  |  tags.config_hash = '$CONFIG_HASH'"
