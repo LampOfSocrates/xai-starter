@@ -19,6 +19,17 @@ fine_tuned_model/
 # Lesson outputs
 results/
 
+# Downloaded structures / datasets (PDB, SKEMPI) — fetched on demand
+data/
+
+# run_all_notebooks logs
+run_all_*.log
+
+# MLflow experiment tracking (local store)
+mlflow.db
+mlartifacts/
+mlruns/
+
 # Editor
 .vscode/
 .idea/
