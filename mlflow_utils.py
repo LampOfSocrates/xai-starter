@@ -111,6 +111,22 @@ def _env_tags():
     return tags
 
 
+# Tag prefix the experiment driver sets (e.g. MLFLOW_TAG_campaign=overnight-...).
+_ENV_TAG_PREFIX = "MLFLOW_TAG_"
+
+
+def _env_run_tags():
+    """Tags injected via environment, e.g. campaign / exp_id / run_uid / config_hash.
+
+    The papermill driver (experiments/run_experiment.sh) exports
+    ``MLFLOW_TAG_<name>=<value>`` for each; this lets every ``run(...)`` in a
+    notebook pick them up without the notebook itself being aware of them, so
+    overnight campaigns and reproducibility ids attach automatically.
+    """
+    return {k[len(_ENV_TAG_PREFIX):]: v
+            for k, v in os.environ.items() if k.startswith(_ENV_TAG_PREFIX)}
+
+
 def set_experiment(name):
     """Select (creating if needed) an experiment whose artifacts live under
     ``mlartifacts/<name>`` at the repo root."""
@@ -146,6 +162,9 @@ def run(experiment, run_name, params=None, tags=None, nested=False):
     auto.update(_env_tags())
     if tags:
         auto.update(tags)
+    # Driver-injected campaign / reproducibility ids win last so every run in a
+    # papermill-driven notebook carries them, even nested child runs.
+    auto.update(_env_run_tags())
     with mlflow.start_run(run_name=run_name, nested=nested) as active:
         if params:
             mlflow.log_params(params)

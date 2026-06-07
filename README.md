@@ -165,7 +165,10 @@ remains to turn the scaffold into the full experiment.
 (`ig/_smoke_idea4.py`, ~6 s on GPU). Two honest findings already surfaced and are
 documented in the notebooks: (1) IG's completeness delta stays large regardless
 of step count because the demo model is overfit/saturated — a *model* problem,
-not a step problem (see `ig_l5`); (2) on a single toy complex the consensus does
+not a step problem. The `ig_l5` appendix sweeps dropout/weight-decay and shows
+there is **no fix at this scale**: light regularization still memorizes, heavy
+regularization collapses the model to chance (a degenerate delta≈0) — so *scale*,
+not hyperparameters, is the real lever (see `ig_l5`); (2) on a single toy complex the consensus does
 **not** reliably beat single methods — settling that needs PINDER at scale (see
 `ig_l7`). Both are expected and on-theme; the real verdict needs the full dataset.
 
@@ -179,6 +182,38 @@ exits 0 only when CPU **and** GPU are both ≤ 70%, so you can guard a run with 
 .\.venv\Scripts\python.exe -m nbconvert --to notebook --execute --inplace `
     --ExecutePreprocessor.timeout=600 ig\ig_l4_struct2graph_train.ipynb
 ```
+
+### Parameterised runs + tag-level reports (MLflow)
+
+To sweep hyperparameters / scale up and compare runs, use the harness instead of
+editing notebooks. Each run trains + benchmarks one config and logs params and
+per-method hotspot AUROC to the repo's local MLflow store. **Every run self-gates
+on `_resource_check.py`** (waits and re-checks if the box is busy — safe to launch
+overnight). Group runs with `--tag`, then render one report per tag.
+
+```powershell
+# one configuration
+.\.venv\Scripts\python.exe ig\run_idea4.py --dropout 0.3 --wd 1e-2 --tag my-experiment
+
+# preset overfit -> regularised -> collapse sweep, all under one tag
+.\.venv\Scripts\python.exe ig\run_idea4.py --sweep --tag reg-sweep
+
+# a multi-seed grid (overnight): repeat with different seeds under one tag
+foreach ($s in 0..4) {
+  .\.venv\Scripts\python.exe ig\run_idea4.py --dropout 0.3 --wd 1e-3 --seed $s --tag seed-robustness
+}
+
+# build the tag-level report (markdown + chart under ig/reports/<tag>.md)
+.\.venv\Scripts\python.exe ig\report_idea4.py --tag reg-sweep
+
+# browse everything
+.\.venv\Scripts\python.exe -m mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+`run_idea4.py` knobs: `--dropout --wd --augment --epochs --lr --ig-steps
+--gnnx-epochs --threshold --seed --hidden --dataset {demo,pinder}`. `--dataset
+pinder` is reserved for the real-data path (option *b*) and currently raises by
+design. The pipeline metric source of truth is `idea4_common.run_experiment(...)`.
 
 ## Models you can swap in (pLMs)
 

@@ -25,6 +25,10 @@ data/
 # run_all_notebooks logs
 run_all_*.log
 
+# papermill-executed notebooks + per-run manifests (the MLflow store is the
+# source of truth; output notebooks are reproducible from the manifest)
+experiments/runs/
+
 # MLflow experiment tracking (local store)
 mlflow.db
 mlartifacts/

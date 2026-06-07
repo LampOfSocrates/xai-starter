@@ -527,8 +527,12 @@ def map_ddg_to_nodes(ddg_df, chain_id, resnums, hotspot_thresh=2.0):
     """
     import numpy as np
 
-    pos_to_idx = {p: i for i, p in enumerate(resnums)}
     ddg_per_node = np.full(len(resnums), np.nan)
+    # No usable rows for this complex (e.g. no single-point alanine mutations):
+    # return all-unmeasured rather than KeyError on the missing 'chain' column.
+    if ddg_df is None or len(ddg_df) == 0 or "chain" not in getattr(ddg_df, "columns", []):
+        return ddg_per_node, np.zeros(len(resnums), dtype=bool), 0
+    pos_to_idx = {p: i for i, p in enumerate(resnums)}
     for _, r in ddg_df[ddg_df["chain"] == chain_id].iterrows():
         idx = pos_to_idx.get(int(r["pos"]))
         if idx is None:
@@ -640,3 +644,99 @@ def compute_all_saliencies(model, ga, gd, target=None, ig_steps=48,
     sal["target"] = target
     sal["ig_delta"] = float(np.abs(delta.detach().cpu().numpy()).max())
     return sal
+
+
+# ---------------------------------------------------------------------------
+# One configuration -> one row of metrics (the parameterised experiment)
+# ---------------------------------------------------------------------------
+
+def benchmark_hotspots(model, samples, skempi_df=None, hotspot_thresh=2.0,
+                       ig_steps=200, gnnx_epochs=80, device=None,
+                       cache_dir="./data"):
+    """Pool every pristine demo complex with SKEMPI hotspots and score each xAI
+    method's hotspot recovery by AUROC.
+
+    For each complex we run all three saliencies, line them up against the
+    SKEMPI ΔΔG hotspot mask on the residues SKEMPI actually measured, and pool
+    across complexes so the AUROC is computed over as many labelled residues as
+    the demo set offers (a miniature of the real PINDER↔SKEMPI benchmark).
+
+    Returns a flat dict: ``auroc_<method>`` for each method (omitted if the
+    pooled labels have no class balance), plus ``pooled_measured``,
+    ``pooled_hotspots`` and ``ig_delta_max``.
+    """
+    import numpy as np
+    from sklearn.metrics import roc_auc_score
+
+    if skempi_df is None:
+        skempi_df = fetch_skempi(cache_dir)
+    methods = ("attention", "ig", "gnnexplainer", "consensus")
+    pooled = {m: [] for m in methods}
+    y_all, ig_deltas = [], []
+
+    for s in (s for s in samples if not s["augmented"]):
+        sal = compute_all_saliencies(model, s["ga"], s["gb"], ig_steps=ig_steps,
+                                     gnnx_epochs=gnnx_epochs, device=device)
+        ig_deltas.append(sal["ig_delta"])
+        path = fetch_pdb(s["pdb"], cache_dir)
+        _, _, rn_a = parse_chain(path, s["chain_a"])
+        _, _, rn_d = parse_chain(path, s["chain_b"])
+        ddg = skempi_ddg(skempi_df, s["pdb"])
+        ddg_a, hot_a, _ = map_ddg_to_nodes(ddg, s["chain_a"], rn_a, hotspot_thresh)
+        ddg_d, hot_d, _ = map_ddg_to_nodes(ddg, s["chain_b"], rn_d, hotspot_thresh)
+        for key, ddg_n, hot in (("a", ddg_a, hot_a), ("d", ddg_d, hot_d)):
+            m = np.isfinite(ddg_n)
+            if m.sum() == 0:
+                continue
+            y_all.append(hot[m].astype(int))
+            for meth in methods:
+                pooled[meth].append(np.asarray(sal[key][meth])[m])
+
+    y = np.concatenate(y_all) if y_all else np.array([])
+    out = {"pooled_measured": int(y.size),
+           "pooled_hotspots": int(y.sum()) if y.size else 0,
+           "ig_delta_max": float(max(ig_deltas)) if ig_deltas else float("nan")}
+    if y.size and 0 < y.sum() < y.size:
+        for meth in methods:
+            out[f"auroc_{meth}"] = float(roc_auc_score(y, np.concatenate(pooled[meth])))
+    return out
+
+
+def run_experiment(dropout=0.0, weight_decay=0.0, hidden=32, epochs=80, lr=5e-3,
+                   augment=6, seed=0, threshold=8.0, ig_steps=200, gnnx_epochs=80,
+                   dataset="demo", device=None, cache_dir="./data"):
+    """Train + benchmark ONE configuration end to end; return a flat metrics dict.
+
+    This is the single source of truth behind ``ig/run_idea4.py`` and the
+    parameterised notebooks: change the hyper-parameters, get one comparable row
+    of metrics (train accuracy + per-method hotspot AUROC + IG delta).
+
+    ``dataset='pinder'`` is reserved for the real-data path (option *b*), which is
+    intentionally not wired here — it raises so a scale-up run can't silently
+    fall back to the toy set.
+    """
+    import torch
+
+    if dataset != "demo":
+        raise NotImplementedError(
+            f"dataset='{dataset}' is not wired up. The PINDER loader is option "
+            "(b), on hold until agreed; use dataset='demo' for now.")
+    device = device or get_device()
+    samples = build_demo_dataset(threshold=threshold, augment=augment, seed=seed,
+                                 cache_dir=cache_dir)
+    model = train_struct2graph(samples, hidden=hidden, epochs=epochs, lr=lr,
+                               seed=seed, device=device, verbose=False,
+                               dropout=dropout, weight_decay=weight_decay)
+    model.eval()
+    correct = 0
+    with torch.no_grad():
+        for s in samples:
+            pred = int(model(s["ga"].to(device), s["gb"].to(device)).argmax(1))
+            correct += (pred == s["label"])
+    metrics = {"train_acc": correct / len(samples),
+               "n_samples": len(samples),
+               "n_classes": len({s["label"] for s in samples})}
+    metrics.update(benchmark_hotspots(model, samples, ig_steps=ig_steps,
+                                      gnnx_epochs=gnnx_epochs, device=device,
+                                      cache_dir=cache_dir))
+    return metrics
