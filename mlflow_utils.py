@@ -123,8 +123,11 @@ def _env_run_tags():
     notebook pick them up without the notebook itself being aware of them, so
     overnight campaigns and reproducibility ids attach automatically.
     """
-    return {k[len(_ENV_TAG_PREFIX):]: v
-            for k, v in os.environ.items() if k.startswith(_ENV_TAG_PREFIX)}
+    # Lower-case the stripped key: Windows upper-cases env-var names, so
+    # MLFLOW_TAG_campaign comes back as MLFLOW_TAG_CAMPAIGN; MLflow tag keys are
+    # case-sensitive, so we normalise to a stable lower-case convention.
+    return {k[len(_ENV_TAG_PREFIX):].lower(): v
+            for k, v in os.environ.items() if k.upper().startswith(_ENV_TAG_PREFIX)}
 
 
 def set_experiment(name):

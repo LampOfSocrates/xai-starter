@@ -8,11 +8,17 @@ sweep scripts that import the notebook model/training code.
 
 ## Workflow
 
-1. **Run** a sweep script. Every run is opened with `mu.run(..., tags={"campaign": "<id>", ...})`.
+1. **Run** via the gated papermill driver (see `experiments/README.md`):
+   `experiments/exp_C_benchmark.sh --campaign overnight-2026-06-08 --n-train 5000 ...`
+   Each run is gated on CPU/GPU and tagged with `campaign` / `exp_id` /
+   `config_hash` / `run_uid` automatically (no notebook changes needed).
 2. **Report** with `mlflow_report.py <campaign-id>` → `reports/report_<campaign-id>.md`
    (leaderboard + per-experiment tables + best config + artifact links). *(to build)*
 3. **Tag levels** available for grouping in a report:
    - `campaign` — the overnight batch (top-level report scope)
+   - `exp_id` — logical experiment (e.g. `C-sol-benchmark`)
+   - `config_hash` — identical params → identical hash (reproducibility groups)
+   - `run_uid` — unique per execution (distinguishes reruns)
    - `lesson` — which lesson the run came from (already logged)
    - `model`, `method`, `seed`, `features` — per-run axes for sub-tables
 

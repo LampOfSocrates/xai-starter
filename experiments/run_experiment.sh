@@ -38,6 +38,15 @@ done
 [[ -n "$EXP_ID"   ]] || { echo "--exp-id required" >&2; exit 2; }
 [[ -n "$NOTEBOOK" ]] || { echo "--notebook required" >&2; exit 2; }
 
+# --- 0. Validate before spending any GPU time ------------------------------
+[[ -x "$PY" ]] || { echo "venv python not found at $PY (run from repo root)" >&2; exit 3; }
+[[ -f "$NOTEBOOK" ]] || { echo "notebook not found: $NOTEBOOK" >&2; exit 3; }
+if ! "$PY" -m jupyter kernelspec list 2>/dev/null | grep -qiw "$KERNEL"; then
+  echo "kernel '$KERNEL' not registered. Register the venv kernel with:" >&2
+  echo "  $PY -m ipykernel install --user --name $KERNEL" >&2
+  exit 3
+fi
+
 # --- 1. Resource gate (blocks until CPU and GPU are <= threshold) ----------
 "$PY" experiments/lib/gate.py
 
