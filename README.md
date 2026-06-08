@@ -38,10 +38,35 @@ The site is built by [Quarto](https://quarto.org) and deployed to GitHub Pages b
 that touches a notebook. Re-execution is **disabled** (`_quarto.yml` →
 `execute.enabled: false`): notebooks are run locally on GPU (via the
 [`experiments/`](experiments/) papermill runner) and committed with their
-outputs, and CI only renders those outputs — no models or GPU in CI. Preview the
-site locally with `quarto preview` (needs the [Quarto CLI](https://quarto.org/docs/get-started/)).
+outputs, and CI only renders those outputs — no models or GPU in CI.
 
-> One-time repo setting: **Settings → Pages → Build and deployment → Source = GitHub Actions.**
+### View the executed notebooks after cloning
+
+You don't need to run any cells — the outputs are committed. Three ways to read
+them locally, cheapest first:
+
+1. **Open a notebook directly** in VS Code / JupyterLab / `nbviewer` — every
+   `*.ipynb` already contains its plots and tables.
+2. **Build the whole site once** and open it in a browser:
+   ```powershell
+   # one-time: install the Quarto CLI -> https://quarto.org/docs/get-started/
+   #   winget install Posit.Quarto
+   $env:QUARTO_PYTHON = ".\.venv\Scripts\python.exe"   # so Quarto can read notebook outputs
+   quarto render                                       # writes the site to _site\
+   start _site\index.html                              # open the homepage
+   ```
+3. **Live preview** (auto-reloads as you edit), good for browsing the suite:
+   ```powershell
+   $env:QUARTO_PYTHON = ".\.venv\Scripts\python.exe"
+   quarto preview            # serves at http://localhost:<port> and opens a browser
+   ```
+
+`quarto render`/`preview` only **render** the saved outputs (execution is off in
+`_quarto.yml`), so they need just the Quarto CLI plus `nbformat` from the
+`.venv` — no GPU, torch, or model downloads. The generated `_site/` and
+`.quarto/` folders are git-ignored.
+
+> One-time repo setting (maintainer): **Settings → Pages → Build and deployment → Source = GitHub Actions.**
 
 ## Setup
 
