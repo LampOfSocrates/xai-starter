@@ -21,7 +21,7 @@ website:
   reader-mode: true
   page-navigation: true
   search: true
-  repo-url: https://github.com/LampOfSocrates/plm-starter
+  repo-url: https://github.com/LampOfSocrates/xai-starter
   navbar:
     left:
       - text: "Home"

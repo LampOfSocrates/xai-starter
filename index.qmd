@@ -30,7 +30,7 @@ order:
 ## How this site is built
 
 The notebooks are executed locally (on GPU, via the
-[`experiments/`](https://github.com/LampOfSocrates/plm-starter/tree/main/experiments)
+[`experiments/`](https://github.com/LampOfSocrates/xai-starter/tree/main/experiments)
 papermill runner) and committed **with their outputs**. This site is published
 by [Quarto](https://quarto.org) with re-execution disabled, so it always shows
 exactly the outputs in the repository — no models or GPU are needed to view it.

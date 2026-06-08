@@ -31,7 +31,7 @@ The whole suite is published as a searchable static website (every notebook with
 its **saved outputs** — plots, tables, metrics), so you can read the completed
 lessons without installing anything:
 
-**https://lampofsocrates.github.io/plm-starter/**
+**https://lampofsocrates.github.io/xai-starter/**
 
 The site is built by [Quarto](https://quarto.org) and deployed to GitHub Pages by
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml) on every push
