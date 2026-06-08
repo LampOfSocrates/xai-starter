@@ -1,0 +1,106 @@
+{
+ "campaign": "gnn-smoke-2026-06-08",
+ "generated": "2026-06-08 20:44",
+ "n_runs": 2,
+ "experiments": [
+  {
+   "exp_id": "gnn-l3-graphcls",
+   "reason": "Smoke: does the GAT one-hot graph classifier clear the majority baseline on solubility at tiny N?",
+   "n_runs": 1,
+   "primary_metric": "test_acc",
+   "metrics_present": [
+    "test_acc",
+    "majority_acc"
+   ],
+   "swept_params": [],
+   "configs": [
+    {
+     "config_hash": "4e3cd7c3d1ab",
+     "n_runs": 1,
+     "params": {
+      "model": "GAT",
+      "n_test": "40",
+      "dataset": "proteinea/solubility",
+      "n_train": "80",
+      "batch_size": "8",
+      "hidden": "64",
+      "epochs": "3",
+      "heads": "4",
+      "lr": "0.0005",
+      "window": "3",
+      "features": "one-hot"
+     },
+     "metrics": {
+      "test_acc": {
+       "mean": 0.45,
+       "std": 0.0,
+       "n": 1
+      },
+      "majority_acc": {
+       "mean": 0.5375,
+       "std": 0.0,
+       "n": 1
+      }
+     }
+    }
+   ],
+   "best_config_hash": "4e3cd7c3d1ab"
+  },
+  {
+   "exp_id": "gnn-l9-knngraphs",
+   "reason": "Smoke: do embedding-kNN graphs beat sequence-window and random-control graphs on solubility at tiny N?",
+   "n_runs": 1,
+   "primary_metric": "acc_embedding_knn",
+   "metrics_present": [
+    "acc_sequence_window",
+    "acc_random_control",
+    "avg_edges_knn",
+    "acc_embedding_knn",
+    "avg_edges_seq"
+   ],
+   "swept_params": [],
+   "configs": [
+    {
+     "config_hash": "f2f40ef89fe1",
+     "n_runs": 1,
+     "params": {
+      "model": "GAT",
+      "n_test": "20",
+      "plm": "facebook/esm2_t6_8M_UR50D",
+      "knn_k": "10",
+      "dataset": "proteinea/solubility",
+      "n_train": "40"
+     },
+     "metrics": {
+      "acc_sequence_window": {
+       "mean": 0.55,
+       "std": 0.0,
+       "n": 1
+      },
+      "acc_random_control": {
+       "mean": 0.45,
+       "std": 0.0,
+       "n": 1
+      },
+      "avg_edges_knn": {
+       "mean": 2396.0,
+       "std": 0.0,
+       "n": 1
+      },
+      "acc_embedding_knn": {
+       "mean": 0.5,
+       "std": 0.0,
+       "n": 1
+      },
+      "avg_edges_seq": {
+       "mean": 2366.0,
+       "std": 0.0,
+       "n": 1
+      }
+     }
+    }
+   ],
+   "best_config_hash": "f2f40ef89fe1"
+  }
+ ]
+}

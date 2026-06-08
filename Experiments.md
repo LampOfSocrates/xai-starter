@@ -12,8 +12,11 @@ sweep scripts that import the notebook model/training code.
    `experiments/exp_C_benchmark.sh --campaign overnight-2026-06-08 --n-train 5000 ...`
    Each run is gated on CPU/GPU and tagged with `campaign` / `exp_id` /
    `config_hash` / `run_uid` automatically (no notebook changes needed).
-2. **Report** with `mlflow_report.py <campaign-id>` → `reports/report_<campaign-id>.md`
-   (leaderboard + per-experiment tables + best config + artifact links). *(to build)*
+2. **Report** with `mlflow_report.py --campaign <campaign-id>` →
+   `reports/report_<campaign-id>.md` (per-experiment config tables + best config +
+   one accuracy-chart per experiment + each run's `reason`). Add `--interpret` to
+   have the `claude` CLI read the JSON summary and write an honest Interpretation
+   section. Also emits `reports/summary_<campaign-id>.json` + `reports/figs_<campaign-id>/`.
 3. **Tag levels** available for grouping in a report:
    - `campaign` — the overnight batch (top-level report scope)
    - `exp_id` — logical experiment (e.g. `C-sol-benchmark`)
@@ -100,4 +103,5 @@ Status legend: ⬜ not started · 🟡 scripted · 🟢 run · ✅ reported
 | Date | Campaign tag | Experiments | Outcome | Report |
 |---|---|---|---|---|
 | _2026-06-07_ | _(pilot, untagged)_ | smoke + 14 wired notebooks at default N | 14/14 logged; gnn_l4 < gnn_l3 at tiny N (expected) | — |
+| _2026-06-08_ | `gnn-smoke-2026-06-08` | gnn_l3 + gnn_l9, tiny N (pipeline smoke) | both logged; no signal at N=20–40 (expected); validates run→report→interpret | `reports/report_gnn-smoke-2026-06-08.md` |
 | | | | | |
