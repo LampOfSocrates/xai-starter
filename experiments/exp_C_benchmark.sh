@@ -5,9 +5,10 @@
 # scientific knobs as flags with sensible defaults, forwards the rest.
 #
 # Examples:
-#   experiments/exp_C_benchmark.sh                       # defaults (small smoke)
+#   experiments/exp_C_benchmark.sh --reason "smoke" ...   # --reason is required
 #   experiments/exp_C_benchmark.sh --n-train 5000 --plm facebook/esm2_t12_35M_UR50D \
-#       --seeds '[0,1,2,3,4]' --campaign overnight-2026-06-08
+#       --seeds '[0,1,2,3,4]' --campaign overnight-2026-06-08 \
+#       --reason "Honest 4-model solubility ranking at N=5000 with 5 seeds"
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -22,6 +23,7 @@ PLM="facebook/esm2_t6_8M_UR50D"
 SEEDS="[0,1,2]"
 MAX_EPOCHS=30
 CAMPAIGN="${CAMPAIGN:-adhoc}"
+REASON="${REASON:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -32,6 +34,7 @@ while [[ $# -gt 0 ]]; do
     --seeds)      SEEDS="$2"; shift 2 ;;
     --max-epochs) MAX_EPOCHS="$2"; shift 2 ;;
     --campaign)   CAMPAIGN="$2"; shift 2 ;;
+    --reason)     REASON="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -40,6 +43,7 @@ experiments/run_experiment.sh \
   --exp-id "$EXP_ID" \
   --notebook "$NOTEBOOK" \
   --campaign "$CAMPAIGN" \
+  --reason "$REASON" \
   -P "N_TRAIN=$N_TRAIN" \
   -P "N_VAL=$N_VAL" \
   -P "N_TEST=$N_TEST" \

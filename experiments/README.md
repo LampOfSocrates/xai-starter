@@ -28,24 +28,29 @@ experiments/
 
 ## Run one experiment
 
-```bash
-# defaults (small smoke run)
-experiments/exp_C_benchmark.sh
+Every run needs a **`--reason`**: a plain-English statement of *why* you are
+running it (≥10 chars, more than one word). The driver refuses to start without
+one and logs it as the MLflow tag `reason`, so the report shows the question
+each experiment set out to answer.
 
-# scaled-up, tagged to a campaign
+```bash
+# scaled-up, tagged to a campaign, with a reason
 experiments/exp_C_benchmark.sh \
   --n-train 5000 --n-val 1000 --n-test 1000 \
   --plm facebook/esm2_t12_35M_UR50D --seeds '[0,1,2,3,4]' \
-  --campaign overnight-2026-06-08
+  --campaign overnight-2026-06-08 \
+  --reason "Does ESM-2 35M beat 8M on solubility at N=5000 with seed error bars?"
 ```
 
-Or drive any parameterised notebook directly:
+Or drive any parameterised notebook directly (every lesson notebook now has a
+`parameters`-tagged config cell, so any of them can be a `--notebook` target):
 
 ```bash
 experiments/run_experiment.sh \
   --exp-id C-sol-benchmark \
   --notebook capstones/capstone_l2_benchmark_suite.ipynb \
   --campaign overnight-2026-06-08 \
+  --reason "Honest 4-model ranking at N=5000 with 5 seeds" \
   -P N_TRAIN=5000 -P 'SEEDS=[0,1,2,3,4]' -P PLM_NAME=facebook/esm2_t12_35M_UR50D
 ```
 
@@ -65,6 +70,7 @@ Every run carries four MLflow tags (lower-case, case-normalised across OSes):
 | `exp_id` | logical experiment, e.g. `C-sol-benchmark` | yes |
 | `config_hash` | sha1 of the sorted scientific params | **yes — identical params = identical hash** |
 | `run_uid` | `<exp_id>.<UTC-timestamp>.<rand6>` | **no — unique per execution** |
+| `reason` | plain-English why, from `--reason` (required) | yes (you write it) |
 
 To check reproducibility, run the same command twice and compare the runs that
 share a `config_hash` but differ in `run_uid` — any metric spread is the
