@@ -1,0 +1,39 @@
+---
+title: "Protein LMs + GNNs — Lesson Suite"
+toc: false
+---
+
+A hands-on teaching suite on **protein language models (pLM)**, **graph neural
+networks (GNN)** for proteins, and **model explainability**. Every page is a
+Jupyter notebook rendered with its saved outputs — plots, tables, and metrics
+included — so you can read the completed lessons without running anything.
+
+Use the sidebar (or the search box) to browse. The tracks build up roughly in
+order:
+
+## Tracks
+
+- **Protein Language Models (pLM)** — embeddings and probes, zero-shot variant
+  effect, fine-tuning and token classification, model comparison, attention
+  contacts, LoRA/PEFT, structure-aware models, retrieval, inverse folding, and
+  calibration.
+- **Graph Neural Networks (GNN)** — building graphs from proteins, node and
+  graph classification, fusing pLM features with GNNs, equivariance, real
+  structures, edge features, contact prediction, kNN graphs, oversmoothing, and
+  interaction graphs.
+- **Explainability — Idea-4** — an interaction-explainability research track on
+  PINDER / SKEMPI: attention, integrated gradients, GNNExplainer, and their
+  consensus for hotspot recovery.
+- **Capstones** — an end-to-end pLM→GNN pipeline and a multi-model benchmark
+  suite.
+
+## How this site is built
+
+The notebooks are executed locally (on GPU, via the
+[`experiments/`](https://github.com/LampOfSocrates/plm-starter/tree/main/experiments)
+papermill runner) and committed **with their outputs**. This site is published
+by [Quarto](https://quarto.org) with re-execution disabled, so it always shows
+exactly the outputs in the repository — no models or GPU are needed to view it.
+
+> Two notebooks (`gnn_l2`, `plm_demo`) currently have no saved outputs; run them
+> once locally and re-commit to populate their pages.

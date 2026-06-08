@@ -25,6 +25,24 @@ features) and again in the capstones (joint end-to-end training).
 > against SKEMPI v2.0 alanine-scanning hotspots**. See
 > [Research track — Idea 4](#research-track--cross-method-xai-for-ppi-idea-4) below.
 
+## Browse the lessons online
+
+The whole suite is published as a searchable static website (every notebook with
+its **saved outputs** — plots, tables, metrics), so you can read the completed
+lessons without installing anything:
+
+**https://lampofsocrates.github.io/plm-starter/**
+
+The site is built by [Quarto](https://quarto.org) and deployed to GitHub Pages by
+[`.github/workflows/publish.yml`](.github/workflows/publish.yml) on every push
+that touches a notebook. Re-execution is **disabled** (`_quarto.yml` →
+`execute.enabled: false`): notebooks are run locally on GPU (via the
+[`experiments/`](experiments/) papermill runner) and committed with their
+outputs, and CI only renders those outputs — no models or GPU in CI. Preview the
+site locally with `quarto preview` (needs the [Quarto CLI](https://quarto.org/docs/get-started/)).
+
+> One-time repo setting: **Settings → Pages → Build and deployment → Source = GitHub Actions.**
+
 ## Setup
 
 ```powershell
