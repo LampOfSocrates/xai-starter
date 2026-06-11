@@ -1,15 +1,17 @@
-"""End-to-end smoke test of idea4_common.py - validates the full Idea 4 pipeline
-before the ig_l3..ig_l7 notebooks are written around it.
+r"""End-to-end smoke test of pinch_common.py - validates the full attrib-PINCH pipeline
+before the pinch_l1..pinch_l5 notebooks are written around it.
 
 Run with the canonical venv:
-    .\.venv\Scripts\python.exe ig\_smoke_idea4.py
+    .\.venv\Scripts\python.exe pinch\_smoke_pinch.py
 """
 import os, sys, time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(HERE))   # repo root, for `import common`
+sys.path.insert(0, HERE)                     # this dir, for `import pinch_common`
 import numpy as np
 
-from idea4_common import (
+from pinch_common import (
     get_device, fetch_pdb, parse_chain, contact_graph, interface_mask,
     build_demo_dataset, train_struct2graph, load_or_train_demo,
     compute_all_saliencies, fetch_skempi, skempi_ddg, map_ddg_to_nodes, rank01,

@@ -1,11 +1,13 @@
 """Quick sweep: how do dropout + weight decay affect the IG completeness delta
 on the same 5 demo complexes? Throwaway helper to pick honest hyperparameters
-for the ig_l5 appendix."""
+for the pinch_l3 appendix."""
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(HERE))   # repo root, for `import common`
+sys.path.insert(0, HERE)                     # this dir, for `import pinch_common`
 import torch
 from captum.attr import IntegratedGradients
-from idea4_common import (build_demo_dataset, train_struct2graph,
+from pinch_common import (build_demo_dataset, train_struct2graph,
                           compute_all_saliencies, get_device)
 
 device = get_device()

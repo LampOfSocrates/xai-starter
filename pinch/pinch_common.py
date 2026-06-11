@@ -1,7 +1,7 @@
 """
-idea4_common.py - shared building blocks for the "Idea 4" research notebooks
-===========================================================================
-These five notebooks (``ig_l3`` .. ``ig_l7``) re-implement and extend the
+pinch_common.py - building blocks for the attrib-PINCH research notebooks
+=========================================================================
+These five notebooks (``pinch_l1`` .. ``pinch_l5``) re-implement and extend the
 Sendin (2025) PINDER pipeline to test one falsifiable hypothesis:
 
     Does the CONSENSUS of three explainability methods - mutual attention,
@@ -9,44 +9,26 @@ Sendin (2025) PINDER pipeline to test one falsifiable hypothesis:
     experimentally measured protein-protein binding hotspots (SKEMPI v2.0
     alanine-scanning Delta-Delta-G >= 2 kcal/mol) better than any single method?
 
-``ig_l3`` builds the data primitives from scratch so you can see how a two-chain
-complex becomes a pair of graphs. From ``ig_l4`` onward the same helpers get
-re-used, so they live here in one documented place instead of being copied into
-every notebook.
-
-What's in here
---------------
-Constants / config
-    AMINO_ACIDS, AA_TO_IDX        - canonical 20-AA order for one-hot encoding.
-    THREE_TO_ONE                  - 3-letter -> 1-letter residue codes.
-    get_device()                  - 'cuda' if available else 'cpu'.
-
-Data acquisition (real structures, small downloads)
-    fetch_pdb(pdb_id, cache_dir)  -> local path to a downloaded .pdb file.
-    parse_chain(path, chain_id)   -> (sequence, ca_coords, resnums) for one chain.
-
-Graph construction
-    one_hot_aa(sequence)          -> (L, 20) node features.
-    contact_graph(seq, coords, threshold) -> PyG Data (nodes + 3D contacts).
-    interface_mask(coords_a, coords_b, cutoff) -> (mask_a, mask_b) boolean arrays
-                                     flagging residues at the binding interface.
-
-Model
-    Struct2Graph                  - shared-weight GCN encoder for the two chains,
-                                    a mutual-attention block, and a classifier
-                                    head. Exposes node embeddings and attention
-                                    for the explainability notebooks.
+The geometric primitives this track shares with the other tracks (PDB I/O,
+contact graphs, the amino-acid alphabet, rank-normalisation) now live in the
+repo-level ``common/`` package and are re-exported below, so the ``pinch_l*``
+notebooks can keep doing ``from pinch_common import ...`` unchanged. Everything
+that is specific to attrib-PINCH — the Struct2Graph model, the miniature
+PINDER-stand-in dataset, the SKEMPI ground truth, and the three-method
+consensus benchmark — stays here.
 
 Importing this module from a notebook
 -------------------------------------
-The notebooks live in ``ig/`` next to this file:
+The notebooks live in ``pinch/`` next to this file; ``common/`` is one level up.
+Put the repo root (for ``common``) and ``pinch/`` (for this module) on the path:
 
     import os, sys
-    _root = os.path.abspath("")
-    for _cand in (_root, os.path.join(_root, "ig"), os.path.dirname(_root)):
-        if os.path.isfile(os.path.join(_cand, "idea4_common.py")):
-            sys.path.insert(0, _cand); break
-    from idea4_common import fetch_pdb, parse_chain, contact_graph, Struct2Graph
+    ROOT = os.getcwd()
+    while not os.path.isdir(os.path.join(ROOT, "common")):
+        ROOT = os.path.dirname(ROOT)
+    sys.path.insert(0, ROOT)                          # for `import common`
+    sys.path.insert(0, os.path.join(ROOT, "pinch"))   # for `import pinch_common`
+    from pinch_common import fetch_pdb, parse_chain, contact_graph, Struct2Graph
 """
 
 import os
@@ -58,155 +40,13 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv, global_mean_pool
 
-
-# ---------------------------------------------------------------------------
-# Constants / config
-# ---------------------------------------------------------------------------
-
-# The 20 standard amino acids in a fixed order. Column `i` of a one-hot vector
-# corresponds to AMINO_ACIDS[i]; the order must never change between
-# featurisation and model training.
-AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
-AA_TO_IDX = {a: i for i, a in enumerate(AMINO_ACIDS)}
-
-# Three-letter -> one-letter residue codes, for parsing PDB files.
-THREE_TO_ONE = {
-    "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C",
-    "GLN": "Q", "GLU": "E", "GLY": "G", "HIS": "H", "ILE": "I",
-    "LEU": "L", "LYS": "K", "MET": "M", "PHE": "F", "PRO": "P",
-    "SER": "S", "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V",
-}
-
-
-def get_device():
-    """Return 'cuda' when a GPU is visible, else 'cpu'. The graphs here are tiny,
-    so CPU is fine; the same code moves to GPU unchanged for full PINDER."""
-    return "cuda" if torch.cuda.is_available() else "cpu"
-
-
-# ---------------------------------------------------------------------------
-# Data acquisition - real structures, small downloads
-# ---------------------------------------------------------------------------
-
-def fetch_pdb(pdb_id, cache_dir="./data"):
-    """Download a PDB structure from RCSB (once) and return the local path.
-
-    Uses ``certifi``'s CA bundle explicitly: a conda base environment often
-    exports ``SSL_CERT_FILE`` pointing at a bundle this venv cannot read, which
-    otherwise makes ``requests`` fail with an SSL error inside a venv.
-
-    Args:
-        pdb_id:    4-character PDB accession, e.g. ``"1brs"``.
-        cache_dir: directory to cache the .pdb file in.
-
-    Returns:
-        Absolute path to the downloaded ``<pdb_id>.pdb`` file.
-    """
-    import certifi
-    import requests
-
-    pdb_id = pdb_id.lower()
-    os.makedirs(cache_dir, exist_ok=True)
-    path = os.path.join(cache_dir, f"{pdb_id}.pdb")
-    if not os.path.isfile(path):
-        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
-        resp = requests.get(url, timeout=60, verify=certifi.where())
-        resp.raise_for_status()
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(resp.text)
-    return os.path.abspath(path)
-
-
-def parse_chain(pdb_path, chain_id, model_id=0):
-    """Extract one chain's sequence and C-alpha coordinates from a PDB file.
-
-    Only standard amino-acid residues with a C-alpha atom are kept (waters,
-    ligands, and non-standard residues are skipped). Insertion codes are
-    ignored; the first conformer of each residue is used.
-
-    Args:
-        pdb_path: path to a .pdb file (see ``fetch_pdb``).
-        chain_id: the chain identifier, e.g. ``"A"``.
-        model_id: which model to read (0 = first; matters for NMR ensembles).
-
-    Returns:
-        A tuple ``(sequence, ca_coords, resnums)`` where
-            sequence  : str of one-letter codes, length L.
-            ca_coords : float ndarray of shape (L, 3) - C-alpha xyz.
-            resnums   : list of L author residue numbers (ints) for cross-
-                        referencing SKEMPI mutations later.
-    """
-    from Bio.PDB import PDBParser
-
-    parser = PDBParser(QUIET=True)
-    structure = parser.get_structure("x", pdb_path)
-    chain = structure[model_id][chain_id]
-
-    seq, coords, resnums = [], [], []
-    for residue in chain:
-        resname = residue.get_resname().strip().upper()
-        if resname not in THREE_TO_ONE:          # skip HOH, ligands, modified
-            continue
-        if "CA" not in residue:                   # need a C-alpha to place a node
-            continue
-        seq.append(THREE_TO_ONE[resname])
-        coords.append(residue["CA"].get_coord())
-        resnums.append(residue.id[1])
-    return "".join(seq), np.asarray(coords, dtype=float), resnums
-
-
-# ---------------------------------------------------------------------------
-# Graph construction
-# ---------------------------------------------------------------------------
-
-def one_hot_aa(sequence):
-    """Amino-acid string -> (L, 20) one-hot node-feature tensor.
-
-    Unknown characters become an all-zero row instead of raising."""
-    x = torch.zeros(len(sequence), len(AMINO_ACIDS))
-    for i, aa in enumerate(sequence):
-        if aa in AA_TO_IDX:
-            x[i, AA_TO_IDX[aa]] = 1.0
-    return x
-
-
-def contact_graph(sequence, coords, threshold=8.0):
-    """Build a single-chain residue contact graph as a PyG ``Data`` object.
-
-    An edge connects any two residues whose C-alpha atoms are within
-    ``threshold`` angstroms (8 A is the standard structural-biology contact
-    cutoff). Node features are one-hot amino acids; ``pos`` keeps the coords so
-    later notebooks can paint saliency back onto the 3D structure.
-    """
-    coords = np.asarray(coords, dtype=float)
-    diffs = coords[:, None, :] - coords[None, :, :]
-    dist = np.linalg.norm(diffs, axis=-1)
-    mask = (dist < threshold) & (dist > 0)
-    src, dst = np.where(mask)
-    return Data(
-        x=one_hot_aa(sequence),
-        edge_index=torch.tensor(np.stack([src, dst]), dtype=torch.long),
-        edge_attr=torch.tensor(dist[mask], dtype=torch.float32).unsqueeze(-1),
-        pos=torch.tensor(coords, dtype=torch.float32),
-    )
-
-
-def interface_mask(coords_a, coords_b, cutoff=8.0):
-    """Flag residues at the binding interface between two chains.
-
-    A residue in chain A is "interface" if its C-alpha lies within ``cutoff`` of
-    any C-alpha in chain B, and vice versa. This is a C-alpha approximation of
-    the all-atom 4 A interface Sendin used for the ablation; it is the structural
-    reference we will (loosely) compare the explainability rankings against, with
-    SKEMPI providing the experimental ground truth.
-
-    Returns:
-        ``(mask_a, mask_b)`` boolean ndarrays of length len(coords_a) / b.
-    """
-    coords_a = np.asarray(coords_a, dtype=float)
-    coords_b = np.asarray(coords_b, dtype=float)
-    d = np.linalg.norm(coords_a[:, None, :] - coords_b[None, :, :], axis=-1)
-    return d.min(axis=1) < cutoff, d.min(axis=0) < cutoff
+# Shared primitives now live in the repo-level ``common/`` package. They are
+# re-exported here so the notebooks' ``from pinch_common import ...`` lines keep
+# working and so the SKEMPI / benchmark code below can call them unqualified.
+from common import (
+    AMINO_ACIDS, AA_TO_IDX, THREE_TO_ONE, get_device,
+    fetch_pdb, parse_chain, one_hot_aa, contact_graph, interface_mask, rank01,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +156,7 @@ class Struct2Graph(nn.Module):
 # its own "cluster", and create several examples per cluster by light structural
 # augmentation (random edge dropout) - the same shape of task at a scale that
 # trains in seconds on CPU. The full PINDER loader is a gated extension in
-# ``ig_l4``.
+# ``pinch_l2``.
 
 # (pdb_id, chain_a, chain_b, short_name). Chain A is the larger "receptor"
 # (enzyme), chain B the smaller "ligand" (inhibitor) by convention here.
@@ -386,7 +226,7 @@ def train_struct2graph(samples, hidden=32, epochs=80, lr=5e-3, seed=0,
     (``dropout=0``, ``weight_decay=0``) it essentially overfits at this scale;
     that is fine and even on-message (the thesis's headline lesson is shortcut
     learning). Pass ``dropout`` / ``weight_decay`` > 0 to regularise it instead -
-    ``ig_l5`` uses this to show that a non-memorising model has a far smaller IG
+    ``pinch_l3`` uses this to show that a non-memorising model has a far smaller IG
     completeness delta (less gradient saturation). Returns the model (``eval``).
     """
     device = device or get_device()
@@ -419,9 +259,9 @@ def load_or_train_demo(weights_path, hidden=32, epochs=80, device=None,
                        cache_dir="./data"):
     """Load saved Struct2Graph weights, or train + save them if absent.
 
-    Lets ``ig_l5`` / ``ig_l6`` / ``ig_l7`` each run top-to-bottom on their own:
-    they reuse the model trained in ``ig_l4`` when present, otherwise quietly
-    train a fresh one. Returns ``(model, samples)``.
+    Lets ``pinch_l3`` / ``pinch_l4`` / ``pinch_l5`` each run top-to-bottom on
+    their own: they reuse the model trained in ``pinch_l2`` when present,
+    otherwise quietly train a fresh one. Returns ``(model, samples)``.
     """
     device = device or get_device()
     samples = build_demo_dataset(cache_dir=cache_dir)
@@ -547,21 +387,6 @@ def map_ddg_to_nodes(ddg_df, chain_id, resnums, hotspot_thresh=2.0):
 # ---------------------------------------------------------------------------
 # The three explainability methods, in one place
 # ---------------------------------------------------------------------------
-
-def rank01(values):
-    """Rank-normalise a 1-D array to [0, 1] (ties broken by order).
-
-    Used to put attention, IG, and GNNExplainer - which live on completely
-    different scales - onto a common footing before averaging into a consensus.
-    """
-    import numpy as np
-
-    v = np.asarray(values, dtype=float)
-    order = v.argsort()
-    ranks = np.empty(len(v), dtype=float)
-    ranks[order] = np.arange(len(v))
-    return ranks / max(len(v) - 1, 1)
-
 
 def _gnnexplainer_saliency(model, x, edge_index, partner_h, epochs=60):
     """Per-node GNNExplainer importance for one chain, partner context frozen.
@@ -707,7 +532,7 @@ def run_experiment(dropout=0.0, weight_decay=0.0, hidden=32, epochs=80, lr=5e-3,
                    dataset="demo", device=None, cache_dir="./data"):
     """Train + benchmark ONE configuration end to end; return a flat metrics dict.
 
-    This is the single source of truth behind ``ig/run_idea4.py`` and the
+    This is the single source of truth behind ``pinch/run_pinch.py`` and the
     parameterised notebooks: change the hyper-parameters, get one comparable row
     of metrics (train accuracy + per-method hotspot AUROC + IG delta).
 

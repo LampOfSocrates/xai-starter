@@ -5,7 +5,8 @@ project:
     - index.qmd
     - plm/*.ipynb
     - gnn/*.ipynb
-    - ig/*.ipynb
+    - common/*.ipynb
+    - pinch/*.ipynb
     - capstones/*.ipynb
 
 # Render the notebooks exactly as committed - never re-execute. The cells
@@ -60,15 +61,17 @@ website:
           - gnn/gnn_l9_knn_graphs.ipynb
           - gnn/gnn_l10_oversmoothing.ipynb
           - gnn/gnn_l11_interaction_graphs.ipynb
-      - section: "Explainability - Idea-4 (PINDER/SKEMPI)"
+      - section: "Integrated Gradients — foundations"
         contents:
-          - ig/ig_l1_simple.ipynb
-          - ig/ig_l2_tiny_network.ipynb
-          - ig/ig_l3_pinder_graphs.ipynb
-          - ig/ig_l4_struct2graph_train.ipynb
-          - ig/ig_l5_ig_node_embeddings.ipynb
-          - ig/ig_l6_attention_gnnexplainer.ipynb
-          - ig/ig_l7_skempi_consensus_benchmark.ipynb
+          - common/ig_l1_simple.ipynb
+          - common/ig_l2_tiny_network.ipynb
+      - section: "attrib-PINCH — cross-method xAI for PPI (PINDER/SKEMPI)"
+        contents:
+          - pinch/pinch_l1_pinder_graphs.ipynb
+          - pinch/pinch_l2_struct2graph_train.ipynb
+          - pinch/pinch_l3_ig_node_embeddings.ipynb
+          - pinch/pinch_l4_attention_gnnexplainer.ipynb
+          - pinch/pinch_l5_skempi_consensus_benchmark.ipynb
       - section: "Capstones"
         contents:
           - capstones/capstone_l1_end_to_end_plm_gnn.ipynb

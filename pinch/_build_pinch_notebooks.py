@@ -1,12 +1,12 @@
-"""Build the Idea-4 research notebooks (ig_l3 .. ig_l7) from cell specs.
+"""Build the attrib-PINCH research notebooks (pinch_l1 .. pinch_l5) from cell specs.
 
 These five notebooks walk through the Sendin-2025 PPI explainability pipeline
-step by step, reusing the tested helpers in ``idea4_common.py`` so each notebook
+step by step, reusing the tested helpers in ``pinch_common.py`` so each notebook
 stays short and readable. Unlike the auto-generated lesson notebooks (which come
 from self-contained ``*.py`` scripts via ``_py_to_notebook.py``), these import a
 shared module, so we author their cells explicitly here.
 
-    .\\.venv\\Scripts\\python.exe ig\\_build_idea4_notebooks.py
+    .\\.venv\\Scripts\\python.exe ig\\_build_pinch_notebooks.py
 """
 import os
 
@@ -15,15 +15,18 @@ import nbformat as nbf
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Path-bootstrap cell prepended to every notebook: works whether the kernel's
-# cwd is the repo root or the ig/ folder, and points one shared ./data cache.
+# cwd is the repo root or the pinch/ folder. It walks up to the repo root (the
+# dir holding common/), puts both that root (for `import common`) and pinch/
+# (for `import pinch_common`) on sys.path, and points one shared ./data cache.
 BOOTSTRAP = '''\
 import os, sys
-HERE = os.path.abspath("")
-ROOT = HERE if os.path.isfile(os.path.join(HERE, "ig", "idea4_common.py")) \\
-    else os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(ROOT, "ig"))
+ROOT = os.path.abspath("")
+while ROOT != os.path.dirname(ROOT) and not os.path.isdir(os.path.join(ROOT, "common")):
+    ROOT = os.path.dirname(ROOT)
+sys.path.insert(0, ROOT)                          # for `import common`
+sys.path.insert(0, os.path.join(ROOT, "pinch"))   # for `import pinch_common`
 DATA = os.path.join(ROOT, "data")
-WEIGHTS = os.path.join(DATA, "idea4_struct2graph.pt")
+WEIGHTS = os.path.join(DATA, "pinch_struct2graph.pt")
 print("repo root:", ROOT)'''
 
 
@@ -63,10 +66,10 @@ RUN_ORDER = (
 )
 
 # ---------------------------------------------------------------------------
-# ig_l3 — from two protein chains to two graphs
+# pinch_l1 — from two protein chains to two graphs
 # ---------------------------------------------------------------------------
 L3 = [
-    md("# Idea 4 · Lesson 3 — From a PPI complex to two residue graphs\n\n"
+    md("# attrib-PINCH · pinch_l1 — From a PPI complex to two residue graphs\n\n"
        "The research question (see the repo README and the Obsidian research "
        "vault) is whether the **consensus** of three explainability methods "
        "predicts experimentally-measured binding hotspots better than any "
@@ -79,7 +82,7 @@ L3 = [
     md(RUN_ORDER),
     md("## Setup\n\nLocate the shared helpers and the data cache."),
     code(BOOTSTRAP),
-    code("from idea4_common import (fetch_pdb, parse_chain, contact_graph,\n"
+    code("from pinch_common import (fetch_pdb, parse_chain, contact_graph,\n"
          "                          interface_mask, get_device)\n"
          "import numpy as np\n"
          "import matplotlib.pyplot as plt\n"
@@ -153,10 +156,10 @@ L3 = [
 ]
 
 # ---------------------------------------------------------------------------
-# ig_l4 — Struct2Graph: the model and its training
+# pinch_l2 — Struct2Graph: the model and its training
 # ---------------------------------------------------------------------------
 L4 = [
-    md("# Idea 4 · Lesson 4 — Struct2Graph: model + training\n\n"
+    md("# attrib-PINCH · pinch_l2 — Struct2Graph: model + training\n\n"
        "We re-implement, in miniature, the architecture Sendin adapted from "
        "**Struct2Graph** (Baranwal & Mayank 2022):\n\n"
        "1. two chains → two graphs (lesson 3),\n"
@@ -172,7 +175,7 @@ L4 = [
     md(RUN_ORDER),
     md("## Setup"),
     code(BOOTSTRAP),
-    code("from idea4_common import (DEMO_COMPLEXES, build_demo_dataset,\n"
+    code("from pinch_common import (DEMO_COMPLEXES, build_demo_dataset,\n"
          "                          Struct2Graph, train_struct2graph,\n"
          "                          load_or_train_demo, get_device)\n"
          "import torch\n"
@@ -240,10 +243,10 @@ L4 = [
 ]
 
 # ---------------------------------------------------------------------------
-# ig_l5 — Integrated Gradients on the node embeddings
+# pinch_l3 — Integrated Gradients on the node embeddings
 # ---------------------------------------------------------------------------
 L5 = [
-    md("# Idea 4 · Lesson 5 — Integrated Gradients on the GCN node embeddings\n\n"
+    md("# attrib-PINCH · pinch_l3 — Integrated Gradients on the GCN node embeddings\n\n"
        "**xAI method #2 of 3.** Integrated Gradients (Sundararajan, Taly & Yan "
        "2017) attributes a prediction to its inputs by integrating gradients "
        "along a straight path from a neutral *baseline* to the actual input.\n\n"
@@ -255,7 +258,7 @@ L5 = [
     md(RUN_ORDER),
     md("## Setup"),
     code(BOOTSTRAP),
-    code("from idea4_common import load_or_train_demo, interface_mask, parse_chain, fetch_pdb, get_device\n"
+    code("from pinch_common import load_or_train_demo, interface_mask, parse_chain, fetch_pdb, get_device\n"
          "from captum.attr import IntegratedGradients\n"
          "import numpy as np, torch\n"
          "import matplotlib.pyplot as plt\n"
@@ -342,7 +345,7 @@ L5 = [
        "regimes and look at the IG delta **and** the train accuracy together. "
        "The accuracy is the catch: a small delta is only meaningful if the model "
        "still discriminates."),
-    code("from idea4_common import train_struct2graph\n"
+    code("from pinch_common import train_struct2graph\n"
          "\n"
          "def _ig_delta(m):\n"
          "    m = m.to(device).eval()\n"
@@ -409,10 +412,10 @@ L5 = [
 ]
 
 # ---------------------------------------------------------------------------
-# ig_l6 — attention + GNNExplainer (methods 1 and 3)
+# pinch_l4 — attention + GNNExplainer (methods 1 and 3)
 # ---------------------------------------------------------------------------
 L6 = [
-    md("# Idea 4 · Lesson 6 — Mutual attention & GNNExplainer\n\n"
+    md("# attrib-PINCH · pinch_l4 — Mutual attention & GNNExplainer\n\n"
        "**xAI methods #1 and #3.** Two more views of the same trained model:\n\n"
        "- **Mutual attention** — the model's own attention weights, summed per "
        "residue (what Sendin used, and what he cautioned is *not* a guaranteed-"
@@ -425,7 +428,7 @@ L6 = [
     md(RUN_ORDER),
     md("## Setup"),
     code(BOOTSTRAP),
-    code("from idea4_common import (load_or_train_demo, _gnnexplainer_saliency,\n"
+    code("from pinch_common import (load_or_train_demo, _gnnexplainer_saliency,\n"
          "                          rank01, get_device)\n"
          "import numpy as np, torch\n"
          "import matplotlib.pyplot as plt\n"
@@ -480,10 +483,10 @@ L6 = [
 ]
 
 # ---------------------------------------------------------------------------
-# ig_l7 — the hypothesis test against SKEMPI
+# pinch_l5 — the hypothesis test against SKEMPI
 # ---------------------------------------------------------------------------
 L7 = [
-    md("# Idea 4 · Lesson 7 — The hypothesis test: consensus vs SKEMPI hotspots\n\n"
+    md("# attrib-PINCH · pinch_l5 — The hypothesis test: consensus vs SKEMPI hotspots\n\n"
        "Everything converges here. The falsifiable hypothesis:\n\n"
        "> The **consensus** of mutual attention, Integrated Gradients, and "
        "GNNExplainer isolates PPI-causal residues **better than any single "
@@ -495,7 +498,7 @@ L7 = [
     md(RUN_ORDER),
     md("## Setup"),
     code(BOOTSTRAP),
-    code("from idea4_common import (load_or_train_demo, compute_all_saliencies,\n"
+    code("from pinch_common import (load_or_train_demo, compute_all_saliencies,\n"
          "                          fetch_skempi, skempi_ddg, map_ddg_to_nodes,\n"
          "                          fetch_pdb, parse_chain, get_device)\n"
          "import numpy as np\n"
@@ -579,15 +582,15 @@ L7 = [
        "3. **A converged IG** — keep the completeness delta near zero.\n"
        "4. **Per-residue, not per-class** — optionally reframe as interface-"
        "residue prediction so every residue is a labelled example.\n\n"
-       "The plumbing for all of that is in `idea4_common.py`; only the dataset "
+       "The plumbing for all of that is in `pinch_common.py`; only the dataset "
        "swaps. This notebook set is the de-risked week-1→3 scaffold from the "
        "research plan — it proves the pipeline runs end to end before committing "
        "compute to full PINDER."),
 ]
 
 if __name__ == "__main__":
-    build("ig_l3_pinder_graphs.ipynb", L3)
-    build("ig_l4_struct2graph_train.ipynb", L4)
-    build("ig_l5_ig_node_embeddings.ipynb", L5)
-    build("ig_l6_attention_gnnexplainer.ipynb", L6)
-    build("ig_l7_skempi_consensus_benchmark.ipynb", L7)
+    build("pinch_l1_pinder_graphs.ipynb", L3)
+    build("pinch_l2_struct2graph_train.ipynb", L4)
+    build("pinch_l3_ig_node_embeddings.ipynb", L5)
+    build("pinch_l4_attention_gnnexplainer.ipynb", L6)
+    build("pinch_l5_skempi_consensus_benchmark.ipynb", L7)

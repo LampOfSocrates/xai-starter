@@ -1,4 +1,4 @@
-"""Parameterised runner for the Idea-4 PPI explainability experiment.
+"""Parameterised runner for the attrib-PINCH PPI explainability experiment.
 
 Run the SAME pipeline with different hyper-parameters and have every run land in
 one local MLflow store, so they are directly comparable in the MLflow UI. This
@@ -7,13 +7,13 @@ is the scale-up / comparison harness referenced in the repo README.
 Examples
 --------
     # one configuration
-    .venv\\Scripts\\python.exe ig\\run_idea4.py --dropout 0.3 --wd 1e-2
+    .venv\\Scripts\\python.exe ig\\run_pinch.py --dropout 0.3 --wd 1e-2
 
     # the overfit -> regularised -> collapse sweep, as separate comparable runs
-    .venv\\Scripts\\python.exe ig\\run_idea4.py --sweep
+    .venv\\Scripts\\python.exe ig\\run_pinch.py --sweep
 
     # also render a parameterised notebook artifact (needs papermill)
-    .venv\\Scripts\\python.exe ig\\run_idea4.py --dropout 0.3 --wd 1e-2 --render ig_l7
+    .venv\\Scripts\\python.exe ig\\run_pinch.py --dropout 0.3 --wd 1e-2 --render pinch_l5
 
     # view results
     .venv\\Scripts\\python.exe -m mlflow ui --backend-store-uri sqlite:///mlflow.db
@@ -74,9 +74,9 @@ def run_one(hp, experiment, run_name, tag=None, render=None,
     """Gate, run one configuration, and log params + metrics to MLflow.
 
     ``tag`` becomes the ``report_tag`` MLflow tag — runs sharing it are grouped
-    by ``report_idea4.py`` into one tag-level report.
+    by ``report_pinch.py`` into one tag-level report.
     """
-    from idea4_common import run_experiment
+    from pinch_common import run_experiment
     import mlflow
     import mlflow_utils as mu
 
@@ -84,7 +84,7 @@ def run_one(hp, experiment, run_name, tag=None, render=None,
         print(f"[gate] still busy after {max_waits} waits — skipping '{run_name}'.")
         return None
 
-    tags = {"harness": "run_idea4"}
+    tags = {"harness": "run_pinch"}
     if tag:
         tags["report_tag"] = tag
     print(f"[run] {run_name}  params={hp}")
@@ -142,7 +142,7 @@ def build_hp(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Parameterised Idea-4 experiment runner")
+    ap = argparse.ArgumentParser(description="Parameterised attrib-PINCH experiment runner")
     ap.add_argument("--dropout", type=float, default=0.0)
     ap.add_argument("--wd", "--weight-decay", dest="wd", type=float, default=0.0)
     ap.add_argument("--hidden", type=int, default=32)
@@ -155,15 +155,15 @@ def main():
     ap.add_argument("--ig-steps", type=int, default=200)
     ap.add_argument("--gnnx-epochs", type=int, default=80)
     ap.add_argument("--dataset", default="demo", choices=["demo", "pinder"])
-    ap.add_argument("--experiment", default="idea4-ppi-xai")
+    ap.add_argument("--experiment", default="pinch-ppi-xai")
     ap.add_argument("--name", default=None, help="run name (auto if omitted)")
     ap.add_argument("--tag", default=None,
                     help="report group tag; runs sharing it are reported together "
-                         "by report_idea4.py --tag <tag>")
+                         "by report_pinch.py --tag <tag>")
     ap.add_argument("--sweep", action="store_true",
                     help="run the overfit->regularised->collapse preset sweep")
     ap.add_argument("--render", default=None, metavar="NOTEBOOK_STEM",
-                    help="also papermill a notebook, e.g. ig_l7_skempi_consensus_benchmark")
+                    help="also papermill a notebook, e.g. pinch_l5_skempi_consensus_benchmark")
     ap.add_argument("--gpu-threshold", dest="gate_threshold", type=float, default=70.0,
                     help="CPU/GPU busy threshold for the resource gate")
     ap.add_argument("--wait", type=int, default=300, help="gate re-check interval (s)")

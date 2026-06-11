@@ -1,6 +1,6 @@
-# Idea 4 — report for tag `report-demo`
+# attrib-PINCH — report for tag `report-demo`
 
-_Experiment_ `idea4-ppi-xai` · _4 runs_ · generated 2026-06-07 23:39
+_Experiment_ `pinch-ppi-xai` · _4 runs_ · generated 2026-06-07 23:39
 
 ## Mean AUROC per method (across the tag group)
 

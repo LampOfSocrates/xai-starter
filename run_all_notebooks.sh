@@ -106,8 +106,8 @@ capstones_nbs=(
     capstones/capstone_l2_benchmark_suite.ipynb
 )
 ig_nbs=(
-    ig/ig_l1_simple.ipynb
-    ig/ig_l2_tiny_network.ipynb
+    common/ig_l1_simple.ipynb
+    common/ig_l2_tiny_network.ipynb
 )
 
 # ---- Build the queue from the requested tracks ----------------------------

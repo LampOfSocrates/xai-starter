@@ -1,6 +1,6 @@
-"""Generate a tag-level report from MLflow runs of the Idea-4 experiment.
+"""Generate a tag-level report from MLflow runs of the attrib-PINCH experiment.
 
-Every run launched by ``run_idea4.py --tag <T>`` is stamped with the MLflow tag
+Every run launched by ``run_pinch.py --tag <T>`` is stamped with the MLflow tag
 ``report_tag=<T>``. This script pulls all runs sharing a tag, ranks them, and
 writes a self-contained markdown report (+ a chart) summarising:
 
@@ -12,7 +12,7 @@ writes a self-contained markdown report (+ a chart) summarising:
 
 Usage
 -----
-    .venv\\Scripts\\python.exe ig\\report_idea4.py --tag overnight-reg-sweep
+    .venv\\Scripts\\python.exe ig\\report_pinch.py --tag overnight-reg-sweep
     # -> ig/reports/overnight-reg-sweep.md  (+ .png)
 """
 import argparse
@@ -39,9 +39,9 @@ def _fmt(v, nd=3):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Tag-level MLflow report for Idea 4")
+    ap = argparse.ArgumentParser(description="Tag-level MLflow report for attrib-PINCH")
     ap.add_argument("--tag", required=True, help="report_tag shared by the runs")
-    ap.add_argument("--experiment", default="idea4-ppi-xai")
+    ap.add_argument("--experiment", default="pinch-ppi-xai")
     ap.add_argument("--out", default=None, help="output .md path (auto if omitted)")
     args = ap.parse_args()
 
@@ -99,7 +99,7 @@ def main():
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     lines = []
-    lines.append(f"# Idea 4 — report for tag `{args.tag}`\n")
+    lines.append(f"# attrib-PINCH — report for tag `{args.tag}`\n")
     lines.append(f"_Experiment_ `{args.experiment}` · _{len(df)} runs_ · generated {now}\n")
 
     lines.append("## Mean AUROC per method (across the tag group)\n")
