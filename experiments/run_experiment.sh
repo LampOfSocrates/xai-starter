@@ -24,7 +24,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."          # repo root
 
 PY=".venv/Scripts/python.exe"
-KERNEL="${EXP_KERNEL:-plm-starter}"
+KERNEL="${EXP_KERNEL:-xai-starter}"
 EXP_ID=""
 NOTEBOOK=""
 CAMPAIGN="${CAMPAIGN:-adhoc}"

@@ -8,8 +8,8 @@ and logged to the shared MLflow store with campaign + reproducibility tags.
 
 ```bash
 .venv/Scripts/python.exe -m pip install -r requirements.txt
-# Register THIS project's venv as a Jupyter kernel named "plm-starter":
-.venv/Scripts/python.exe -m ipykernel install --user --name plm-starter
+# Register THIS project's venv as a Jupyter kernel named "xai-starter":
+.venv/Scripts/python.exe -m ipykernel install --user --name xai-starter
 ```
 
 ## Layout
