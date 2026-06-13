@@ -146,8 +146,8 @@ folder with its own README, all importing the shared [`common/`](common/) code:
 | Track | Folder | Question | Status |
 |---|---|---|---|
 | **`attrib-PINCH`** | [pinch/](pinch/) | Does the *consensus* of attention + IG + GNNExplainer beat any single method at finding PPI binding hotspots? | scaffolded — 5 notebooks, runs end-to-end on a miniature |
-| **`contact-CLASP`** | [clasp/](clasp/) | Does ESM attention recover contacts like DCA, and does IG fusion help as Neff/L drops? | planned — see [clasp/README.md](clasp/README.md) |
-| **`attrib-EDITS`** | [edits/](edits/) | What is the smallest realistic edit that flips a stability/fitness predictor — and does it match real ΔΔG? | planned — see [edits/README.md](edits/README.md) |
+| **`contact-CLASP`** | [clasp/](clasp/) | Does ESM attention recover contacts like DCA, and does IG fusion help as Neff/L drops? | scaffolded — 5 notebooks (BPTI miniature); see [clasp/README.md](clasp/README.md) |
+| **`attrib-EDITS`** | [edits/](edits/) | What is the smallest realistic edit that flips a stability/fitness predictor — and does it match real ΔΔG? | scaffolded — 5 notebooks (GB1 miniature); see [edits/README.md](edits/README.md) |
 
 ### attrib-PINCH notebooks ([pinch/](pinch/))
 

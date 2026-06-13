@@ -7,6 +7,8 @@ project:
     - gnn/*.ipynb
     - common/*.ipynb
     - pinch/*.ipynb
+    - clasp/*.ipynb
+    - edits/*.ipynb
     - capstones/*.ipynb
 
 # Render the notebooks exactly as committed - never re-execute. The cells
@@ -72,6 +74,20 @@ website:
           - pinch/pinch_l3_ig_node_embeddings.ipynb
           - pinch/pinch_l4_attention_gnnexplainer.ipynb
           - pinch/pinch_l5_skempi_consensus_benchmark.ipynb
+      - section: "contact-CLASP — attention vs coevolution (IG fusion)"
+        contents:
+          - clasp/clasp_l1_attention_contacts.ipynb
+          - clasp/clasp_l2_dca_baseline.ipynb
+          - clasp/clasp_l3_neff_degradation.ipynb
+          - clasp/clasp_l4_ig_fusion.ipynb
+          - clasp/clasp_l5_benchmark.ipynb
+      - section: "attrib-EDITS — counterfactual edits vs ΔΔG"
+        contents:
+          - edits/edits_l1_predictor.ipynb
+          - edits/edits_l2_greedy_saturation.ipynb
+          - edits/edits_l3_gradient_counterfactual.ipynb
+          - edits/edits_l4_plausibility_constraint.ipynb
+          - edits/edits_l5_validation.ipynb
       - section: "Capstones"
         contents:
           - capstones/capstone_l1_end_to_end_plm_gnn.ipynb

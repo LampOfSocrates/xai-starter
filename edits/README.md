@@ -1,7 +1,10 @@
 # `edits/` — attrib-EDITS: minimal realistic counterfactual edits vs ΔΔG
 
-> **Status: planned.** Folder scaffolds the track; notebooks are to be built.
-> Reuses the IG / gradient machinery from the [`common/`](../common/) primers.
+> **Status: scaffolded — runnable miniature.** Five notebooks run end to end on a
+> GB1 domain via the tested engine [`edits_common.py`](edits_common.py);
+> [`_smoke_edits.py`](_smoke_edits.py) checks the pipeline (~4 s). The miniature
+> predictor is **ESM-2 used zero-shot**; the real ΔΔG validation (edits_l5) is
+> gated behind the leakage protocol in [`CLAUDE.md`](CLAUDE.md).
 
 The question (Definitive Guide project **#5 `attrib-EDITS`**):
 
@@ -16,23 +19,25 @@ The question (Definitive Guide project **#5 `attrib-EDITS`**):
 > **Read [`CLAUDE.md`](CLAUDE.md) before building** — this track's headline result
 > is only valid on a leakage-free split, and the constraints there are load-bearing.
 
-## Planned notebooks
+## Notebooks (run top to bottom; miniature = GB1 domain, ESM-2 zero-shot)
 
-| Notebook | What it will do |
+| Notebook | What it does |
 |---|---|
-| `edits_l1_predictor` | Wrap the predictor to attack — ESM-1v fitness (masked-marginals) or a ThermoMPNN-style ΔΔG head; sanity-check predictions, define the "flip" target, **report the predictor's baseline on the disjoint eval split** (see CLAUDE.md). |
-| `edits_l2_greedy_saturation` | Greedy in-silico saturation: try all 19 substitutions per position, take the largest-moving edit, iterate — the discrete search baseline. |
-| `edits_l3_gradient_counterfactual` | Gradient/IG counterfactual in embedding space, projected back to the nearest residue — the continuous search. |
-| `edits_l4_plausibility_constraint` | Add the ESM pseudo-likelihood plausibility penalty **inside** the search loop; compare on-manifold vs off-manifold edits (the novelty). |
-| `edits_l5_validation` | Validate on Megascale / FireProtDB on a split disjoint from the predictor's training; report validity / proximity (#edits) / plausibility / sign-rank agreement + predicted-edit-vs-measured-ΔΔG scatter, stratified by identity-to-training. |
+| [edits_l1_predictor](edits_l1_predictor.ipynb) | The borrowed predictor — ESM-2 zero-shot fitness (one forward → log P of every substitution); fitness(WT) + a position×AA log-prob heatmap. **Read CLAUDE.md first.** |
+| [edits_l2_greedy_saturation](edits_l2_greedy_saturation.ipynb) | Greedy in-silico saturation: score every single substitution from one forward, apply the most fitness-reducing, iterate — the discrete (off-manifold) search + trajectory. |
+| [edits_l3_gradient_counterfactual](edits_l3_gradient_counterfactual.ipynb) | Gradient of fitness w.r.t. embeddings → per-position "where to edit" saliency (the IG hook). |
+| [edits_l4_plausibility_constraint](edits_l4_plausibility_constraint.ipynb) | Add the ESM plausibility penalty **inside** the search loop; on-manifold vs off-manifold proximity↔plausibility trade-off (the novelty). |
+| [edits_l5_validation](edits_l5_validation.ipynb) | Search-quality summary; the real ΔΔG validation is **gated** — the notebook prints the required leakage-free protocol. |
 
-## Engine & datasets (planned)
+## Engine, smoke test & datasets
 
-- `edits_common.py` — track engine; imports `common/` (PDB I/O, ESM scoring,
-  IG/gradient helpers); adds the counterfactual search + on-manifold penalty.
-- Predictors: **ESM-1v** (sequence-only, mild leakage) and **ThermoMPNN**
-  (Megascale-trained, severe leakage) — run both; agreement on disjoint data is
-  the robust headline.
-- Ground truth: **Megascale** (Tsuboyama 2023, ~776k ΔΔG) and **FireProtDB**,
-  using ThermoMPNN's published `dataset_splits/` + FireProt-HF so disjointness is
-  inherited. Details and the full operating rules are in [`CLAUDE.md`](CLAUDE.md).
+- [`edits_common.py`](edits_common.py) — the tested engine; imports `common/`;
+  adds the ESM-2 zero-shot predictor, the greedy counterfactual with an
+  on-manifold plausibility penalty, gradient saliency, and a `validate_against_ddg`
+  that **raises** until wired on a leakage-free split.
+- [`_build_edits_notebooks.py`](_build_edits_notebooks.py) regenerates the five
+  notebooks; [`_smoke_edits.py`](_smoke_edits.py) is the fast end-to-end check.
+- **Scale-up predictors:** **ESM-1v** (sequence-only, mild leakage) and
+  **ThermoMPNN** (Megascale-trained, severe). **Ground truth:** Megascale
+  (~776k ΔΔG) + FireProtDB via ThermoMPNN's `dataset_splits/` + FireProt-HF. Full
+  protocol in [`CLAUDE.md`](CLAUDE.md).
