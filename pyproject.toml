@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xai-starter"
+version = "0.0.0"
+description = "Shared helpers for the protein-ML hands-on lessons (mlflow_utils, common/)."
+requires-python = ">=3.9"
+
+# Flat layout: expose the repo-root helper module and the shared `common` package
+# so notebooks can `import mlflow_utils` / `from common import ...` from any lesson
+# subfolder after `pip install -e .` — no per-notebook sys.path shims needed.
+[tool.setuptools]
+py-modules = ["mlflow_utils"]
+packages = ["common"]

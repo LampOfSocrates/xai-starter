@@ -86,6 +86,32 @@ def init_tracking():
     return mlflow.get_tracking_uri()
 
 
+def setup_mlflow():
+    """One-call notebook setup: configure the local SQLite tracking store and
+    return the ready-to-use ``mlflow`` module.
+
+    Replaces the per-notebook boilerplate that imported ``mlflow`` and called the
+    tracking setup by hand. Note the *one* line that still has to live in each
+    notebook is putting the repo root on ``sys.path`` so this module can be
+    imported in the first place (you can't call a helper you can't yet import)::
+
+        import os, sys
+        for _cand in (os.path.abspath(""), os.path.dirname(os.path.abspath(""))):
+            if os.path.isfile(os.path.join(_cand, "mlflow_utils.py")):
+                sys.path.insert(0, _cand); break
+        import mlflow_utils as mu
+        mlflow = mu.setup_mlflow()              # <- everything else lives here
+
+    Returns:
+        the ``mlflow`` module, with its tracking URI already pointed at the
+        repo-root ``mlflow.db``.
+    """
+    import mlflow
+
+    init_tracking()
+    return mlflow
+
+
 def _git_commit(root):
     try:
         return subprocess.check_output(

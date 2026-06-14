@@ -1,5 +1,8 @@
 # Protein ML — Hands-On Lessons
 
+📖 **Live site (browse every lesson with its saved outputs, no install needed):**
+**https://lampofsocrates.github.io/xai-starter/**
+
 Teaching tracks: **pLMs** (Protein Language Models), **GNNs** (Graph Neural
 Networks), and two cross-cutting **capstones** — plus **Integrated Gradients**
 foundations and the shared research code in [`common/`](common/). Each lives in
@@ -79,6 +82,7 @@ them locally, cheapest first:
 # from this directory
 .\.venv\Scripts\Activate.ps1     # if not already activated
 pip install -r requirements.txt
+pip install -e .                 # makes `import mlflow_utils` / `from common import ...` work from any lesson folder
 ```
 
 The first lesson you run will download the chosen model (~30 MB for ESM-2 8M)
@@ -91,6 +95,7 @@ and the dataset. Both cache locally — subsequent runs are fast.
 | [plm_l1_embeddings_probe](plm/plm_l1_embeddings_probe.ipynb) | Frozen pLM as a feature extractor + sklearn classifier on top. Cheapest way to use a pLM. | ~2-5 min | No |
 | [plm_l2_zero_shot_variants](plm/plm_l2_zero_shot_variants.ipynb) | Score mutations using the masked-LM head. NO training required. | ~1 min | No |
 | [plm_l3_finetune_classification](plm/plm_l3_finetune_classification.ipynb) | Fine-tune end-to-end for sequence classification with HF Trainer. | ~10-30 min | Helpful |
+| [plm_l3b_multiclass_localization](plm/plm_l3b_multiclass_localization.ipynb) | Multi-class variant of l3: subcellular localization (`proteinea/localization`, weighted-F1). | ~10-30 min | Helpful |
 | [plm_l4_token_classification](plm/plm_l4_token_classification.ipynb) | Per-residue prediction (e.g. secondary structure). Label-to-token alignment. | ~15-30 min | Helpful |
 | [plm_l5_model_comparison](plm/plm_l5_model_comparison.ipynb) | Grid of {models} × {pooling strategies}. Outputs CSV. | ~10-20 min | Helpful |
 | [plm_l6_attention_contacts](plm/plm_l6_attention_contacts.ipynb) | ESM attention heads recover residue contacts, unsupervised (Rao 2020). | ~2-5 min | No |
@@ -322,7 +327,7 @@ Pooling for graph-level tasks: `global_mean_pool`, `global_max_pool`, `global_ad
 |---|---|---|---|
 | `zhanglab/DeepSol` | Solubility | Binary classification | plm_l1, plm_l3, plm_l5, gnn_l3, gnn_l4 |
 | `proteinea/solubility` | Solubility | Binary classification | Alt. for above |
-| `proteinea/localization` | Subcellular localization | Multi-class (10) | Try in plm_l3 |
+| `proteinea/localization` | Subcellular localization | Multi-class (10) | plm_l3b |
 | `proteinea/fluorescence` | GFP fluorescence | Regression | Try in plm_l3 |
 | `proteinea/stability` | Thermal stability | Regression | Try in plm_l3 |
 | `proteinea/secondary_structure` | SS3 / SS8 | Token classification | plm_l4 |
