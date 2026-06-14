@@ -120,8 +120,17 @@ mu.plot_run_comparison("plm-inverse-folding")
 
 
 def _params_cell(nb):
+    """The cell papermill overrides. If none is tagged ``parameters`` yet, fall
+    back to the config cell (the one assigning MODEL_NAME) and tag it so
+    overrides actually take effect instead of being clobbered by the defaults."""
     for cell in nb.cells:
         if cell.cell_type == "code" and "parameters" in cell.get("metadata", {}).get("tags", []):
+            return cell
+    for cell in nb.cells:
+        if cell.cell_type == "code" and re.search(r"^\s*MODEL_NAME\s*=", cell.source, re.M):
+            cell.metadata.setdefault("tags", [])
+            if "parameters" not in cell.metadata["tags"]:
+                cell.metadata["tags"].append("parameters")
             return cell
     return None
 

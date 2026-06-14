@@ -60,6 +60,26 @@ experiments/run_experiment.sh \
 experiments/batch_overnight.sh overnight-2026-06-08
 ```
 
+## Long-running GPU campaign over the pLM lessons
+
+[`run_plm_gpu.sh`](run_plm_gpu.sh) drives the eight GPU-friendly pLM lessons in
+one pass: fine-tune lessons (`l3`, `l3b`, `l4`, `l7`) at **high epochs**, the grid
+and inference lessons (`l5`, `l2`, `l6`, `l10`) at a **larger backbone**. Each
+lesson goes through `run_experiment.sh` (so it gates and logs MLflow); a lesson
+that fails is **retried then skipped**, so the batch always finishes — safe to
+launch and walk away.
+
+```bash
+experiments/run_plm_gpu.sh                 # auto-named campaign
+experiments/run_plm_gpu.sh my-gpu-sweep    # named campaign
+MAX_RETRIES=5 FT_MODEL=facebook/esm2_t12_35M_UR50D experiments/run_plm_gpu.sh   # tune
+```
+
+Re-run it any time: every run accumulates in the store and appears in each
+lesson's **Run comparison** chart (the cell `mu.plot_run_comparison(...)` appended
+to the end of each notebook), so more epochs / bigger models pile up as bars to
+compare. Dial `FT_MODEL` / `BIG_MODEL` / `V_MODEL` down if you hit OOM.
+
 ## Identifiers & reproducibility
 
 Every run carries four MLflow tags (lower-case, case-normalised across OSes):

@@ -107,6 +107,13 @@ and the dataset. Both cache locally — subsequent runs are fast.
 
 Consolidated tutorial: [plm_tutorial.ipynb](plm/plm_tutorial.ipynb).
 
+> **Scaling these on GPU.** The GPU-friendly lessons end with a **Run comparison**
+> chart (`mu.plot_run_comparison(...)`) showing how the latest run stacks up
+> against every prior run of that lesson in MLflow. To drive longer-epoch /
+> bigger-model runs unattended (retry-then-skip, resource-gated, MLflow-logged),
+> use [`experiments/run_plm_gpu.sh`](experiments/run_plm_gpu.sh) — see
+> [experiments/README.md](experiments/README.md).
+
 ## GNN track — [gnn/README.md](gnn/README.md)
 
 | Notebook | What it teaches | CPU runtime | GPU? |
