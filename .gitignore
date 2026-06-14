@@ -43,3 +43,6 @@ mlruns/
 .idea/
 
 **/*.quarto_ipynb
+
+# editable-install build metadata
+*.egg-info/

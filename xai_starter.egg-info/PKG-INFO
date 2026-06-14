@@ -1,5 +1,0 @@
-Metadata-Version: 2.4
-Name: xai-starter
-Version: 0.0.0
-Summary: Shared helpers for the protein-ML hands-on lessons (mlflow_utils, common/).
-Requires-Python: >=3.9
