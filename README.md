@@ -170,6 +170,30 @@ The five `pinch_l1`–`pinch_l5` notebooks share one tested engine,
 [`pinch/_build_pinch_notebooks.py`](pinch/_build_pinch_notebooks.py).
 `pinch/_smoke_pinch.py` is a fast end-to-end check of the whole pipeline.
 
+### contact-CLASP notebooks ([clasp/](clasp/))
+
+Miniature = BPTI (`2ptc:I`); shared engine [`clasp/clasp_common.py`](clasp/clasp_common.py).
+
+| Notebook | What it teaches | CPU runtime | GPU? |
+|---|---|---|---|
+| [clasp_l1_attention_contacts](clasp/clasp_l1_attention_contacts.ipynb) | ESM-2 attention → symmetrise → APC-corrected head average (Rao 2021); precision@L vs true Cα contacts. | ~1 min | No |
+| [clasp_l2_dca_baseline](clasp/clasp_l2_dca_baseline.ipynb) | Mean-field DCA on an MSA (simulated, contact-seeded) — the classical coevolution comparator. | ~1 min | No |
+| [clasp_l3_neff_degradation](clasp/clasp_l3_neff_degradation.ipynb) | Subsample the MSA; plot precision@L vs Neff/L — **the headline attention-vs-DCA degradation curve**. | ~1 min | No |
+| [clasp_l4_ig_fusion](clasp/clasp_l4_ig_fusion.ipynb) | Gradient/IG-derived L×L contact map; rank-fusion with attention; Δprecision. | ~1 min | No |
+| [clasp_l5_benchmark](clasp/clasp_l5_benchmark.ipynb) | One call: attention / DCA / fusion precision@L across Neff/L bins; honest read. | ~1 min | No |
+
+### attrib-EDITS notebooks ([edits/](edits/))
+
+Miniature = GB1 domain, ESM-2 zero-shot; shared engine [`edits/edits_common.py`](edits/edits_common.py). **Read [`edits/CLAUDE.md`](edits/CLAUDE.md) first** — the ΔΔG result is only valid on a leakage-free split.
+
+| Notebook | What it teaches | CPU runtime | GPU? |
+|---|---|---|---|
+| [edits_l1_predictor](edits/edits_l1_predictor.ipynb) | The borrowed predictor — ESM-2 zero-shot fitness (one forward → log P of every substitution) + a position×AA heatmap. | ~1 min | No |
+| [edits_l2_greedy_saturation](edits/edits_l2_greedy_saturation.ipynb) | Greedy in-silico saturation: apply the most fitness-reducing substitution, iterate — the discrete (off-manifold) search. | ~1 min | No |
+| [edits_l3_gradient_counterfactual](edits/edits_l3_gradient_counterfactual.ipynb) | Gradient of fitness w.r.t. embeddings → per-position "where to edit" saliency (the IG hook). | ~1 min | No |
+| [edits_l4_plausibility_constraint](edits/edits_l4_plausibility_constraint.ipynb) | Add the ESM plausibility penalty **inside** the search loop; on- vs off-manifold proximity↔plausibility trade-off (the novelty). | ~1 min | No |
+| [edits_l5_validation](edits/edits_l5_validation.ipynb) | Search-quality summary; the real ΔΔG validation is **gated** — prints the required leakage-free protocol. | ~1 min | No |
+
 ## Research track — Cross-method xAI for PPI (attrib-PINCH)
 
 The `pinch_l1`–`pinch_l5` notebooks above are the runnable, de-risked scaffold for
