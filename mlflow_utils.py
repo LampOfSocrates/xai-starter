@@ -211,3 +211,120 @@ def log_results_dir(path, exts=(".png", ".csv", ".json")):
     for fn in sorted(os.listdir(path)):
         if fn.lower().endswith(tuple(exts)):
             mlflow.log_artifact(os.path.join(path, fn))
+
+
+# ---------------------------------------------------------------------------
+# Run-comparison chart: a lesson's own MLflow history at a glance
+# ---------------------------------------------------------------------------
+# Best-known "headline number" per task, best first. Anything not here falls
+# back to the first metric present (sorted), so new metrics still chart.
+_COMPARE_PRIORITY = (
+    "test_acc", "test_accuracy", "test_auroc", "test_f1", "test_mcc",
+    "accuracy", "acc", "auroc", "auc", "f1", "mcc", "r2",
+    "spearman_best", "spearman", "best_prec_at_l", "avg_prec_at_l",
+    "precision_at_l", "recovery_pct",
+)
+
+
+def _compact(v):
+    """Shorten a param value for an axis label (e.g. a HF model id)."""
+    s = str(v)
+    if "/" in s:
+        s = s.split("/")[-1]
+    return s.replace("_UR50D", "").replace("_UR90S_1", "")
+
+
+def _pick_compare_metric(present):
+    for cand in _COMPARE_PRIORITY:
+        if cand in present:
+            return cand
+    return sorted(present)[0] if present else None
+
+
+def compare_runs(experiment, metric=None, max_runs=40):
+    """Return ``(DataFrame, metric)`` of runs in ``experiment`` (oldest first),
+    restricted to those that recorded ``metric``. ``metric`` is auto-detected
+    when ``None``. Returns an empty frame if the experiment/metric is absent —
+    never raises, so it is safe in a fresh checkout."""
+    import mlflow
+    import pandas as pd
+
+    init_tracking()
+    exp = mlflow.get_experiment_by_name(experiment)
+    if exp is None:
+        return pd.DataFrame(), None
+    df = mlflow.search_runs(experiment_ids=[exp.experiment_id],
+                            order_by=["attributes.start_time ASC"],
+                            max_results=max_runs)
+    if df is None or df.empty:
+        return pd.DataFrame(), None
+    present = [c[len("metrics."):] for c in df.columns
+               if c.startswith("metrics.") and df[c].notna().any()]
+    metric = metric or _pick_compare_metric(present)
+    mcol = f"metrics.{metric}" if metric else None
+    if not mcol or mcol not in df.columns:
+        return pd.DataFrame(), metric
+    return df[df[mcol].notna()].copy(), metric
+
+
+def plot_run_comparison(experiment, metric=None, max_runs=40, figsize=None):
+    """Bar chart comparing the headline ``metric`` across every logged run of an
+    MLflow ``experiment`` — a lesson's own run history at a glance.
+
+    Drop it at the end of a lesson: once the current run is logged it shows how
+    that run stacks up against prior ones (more epochs, a bigger model, ...).
+    Bars are labelled by the param that varies across runs (epochs / model /
+    method); the best run is blue, the latest is orange. Degrades to a printed
+    message (no exception) when there are no runs yet or the metric is absent,
+    so it is safe under papermill and in a fresh checkout.
+
+    Returns the matplotlib ``Figure`` (auto-displayed as the cell's last value),
+    or ``None`` when there is nothing to plot.
+    """
+    df, metric = compare_runs(experiment, metric=metric, max_runs=max_runs)
+    if df.empty or not metric:
+        print(f"[run-comparison] nothing to plot yet for {experiment!r} "
+              f"(need >=1 run with a metric) — re-run to accumulate history.")
+        return None
+
+    import matplotlib.pyplot as plt
+
+    vals = df[f"metrics.{metric}"].astype(float).tolist()
+    pcols = [c for c in df.columns if c.startswith("params.")]
+    varying = [c for c in pcols if df[c].astype(str).nunique(dropna=True) > 1]
+    pref = [c for c in ("params.epochs", "params.model", "params.model_id",
+                        "params.method", "params.n_train") if c in varying]
+    label_cols = pref or varying[:2]
+
+    names = (df["tags.mlflow.runName"].tolist()
+             if "tags.mlflow.runName" in df.columns else [None] * len(df))
+    ids = df["run_id"].tolist() if "run_id" in df.columns else [""] * len(df)
+    labels = []
+    for i, (_, row) in enumerate(df.iterrows()):
+        parts = [f"{c.split('.', 1)[1]}={_compact(row[c])}"
+                 for c in label_cols
+                 if row[c] is not None and str(row[c]) != "nan"]
+        if not parts:
+            parts = [names[i] if isinstance(names[i], str) and names[i]
+                     else str(ids[i])[:8]]
+        labels.append("\n".join(parts))
+
+    n = len(vals)
+    best = max(range(n), key=lambda i: vals[i])
+    colors = ["#bcbcbc"] * n
+    colors[best] = "#2c7fb8"                      # best run
+    if best != n - 1:
+        colors[-1] = "#d95f02"                    # latest run (if not the best)
+
+    fig, ax = plt.subplots(figsize=figsize or (max(6, 1.15 * n), 4.4))
+    bars = ax.bar(range(n), vals, color=colors, edgecolor="black", linewidth=0.4)
+    ax.bar_label(bars, fmt="%.3f", fontsize=8, padding=2)
+    ax.set_xticks(range(n))
+    ax.set_xticklabels(labels, fontsize=7, rotation=30, ha="right")
+    ax.set_ylabel(metric)
+    if vals and all(0.0 <= v <= 1.0 for v in vals):
+        ax.set_ylim(0, 1)
+    ax.set_title(f"{experiment} — {metric} across {n} run(s)  "
+                 f"(blue = best, orange = latest)")
+    plt.tight_layout()
+    return fig
